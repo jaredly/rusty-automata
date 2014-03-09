@@ -248,13 +248,13 @@ fn teamDiff(team: Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
   let danger = counts[predator(team) as int];
   let friends = counts[team as int];
   if danger[1] > 0 {
-    -2
+    -1
   } else if friends[1] > 6 {
     -1
   } else if friends[1] < 2 {
     -1
   } else if food[1] > 0 {
-    2
+    1
   } else {
     0
   }
