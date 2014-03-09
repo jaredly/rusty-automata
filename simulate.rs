@@ -204,8 +204,8 @@ fn upBlank(current: &mut Matrix, x: uint, y: uint, counts: &[[u8, ..2], ..4]) {
   }
   //if what > 1 {
   if (when > 0) {
-    let nval = what / when / 2 - 1;
-    if nval < 1 {
+    let nval = what / when / 2;
+    if nval < 2 {
       which = 0;
     }
     current.values[y][x] = getPoor(numTeam(which), nval);
