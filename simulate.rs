@@ -347,7 +347,8 @@ pub fn main() {
             current.values[y as uint * current.height / config.height][x as uint * current.width / config.width] = 10;
           }
         },
-        _ => {}
+
+                _ => {}
       }
     }
     if going {
