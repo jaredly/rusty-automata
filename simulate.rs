@@ -329,14 +329,6 @@ pub fn main() {
   let mut current = &mut two;
   let mut third:&mut Matrix;
 
-  /*
-  fill(current, 30, 60, 10, 10, 1);
-  for i in range(0, 30) {
-    fill(current, 0, 10 + i * 2, 100, 2, i as u8);
-    //fill(current, 0, 0 + i*4, 20, 4, i as u8);
-  }
-  */
-
   prefill(current);
 
   let going = true;
@@ -352,18 +344,10 @@ pub fn main() {
         sdl::event::KeyEvent(k, _, _, _) => prefill(current),
         sdl::event::MouseMotionEvent(st, x, y, _, _) => {
           if st.len() > 0 {
-          //st.iter().map(|&flag| {
-            //match flag {
-              //sdl::event::LeftMouseState => {
-                current.values[y as uint * current.height / config.height][x as uint * current.width / config.width] = 10;
-              //},
-              //_ => {}
-            //};
-          //});
+            current.values[y as uint * current.height / config.height][x as uint * current.width / config.width] = 10;
           }
         },
-
-                _ => {}
+        _ => {}
       }
     }
     if going {
