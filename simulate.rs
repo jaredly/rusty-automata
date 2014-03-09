@@ -78,7 +78,10 @@ fn getRich(val: u8) -> (Team, u8) {
   }
 }
 
-fn getPoor(team: Team, val: u8) -> u8 {
+fn getPoor(team: Team, mut val: u8) -> u8 {
+  if val > 10 {
+    val = 10;
+  }
   match team {
     Blank => 0,
     Blue => val,
@@ -164,7 +167,7 @@ fn initScreen(config: Config) -> ~Surface {
 
 fn upOne(old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
   let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
-  let mut counts:[u8, ..4] = [0,0,0,0];
+  let mut counts:[[u8, ..2], ..4] = [[0,0],[0,0],[0,0],[0,0]];
   let (team, cval) = getRich(old.values[y][x]);
   for i in range(0, 8) {
     let (dx, dy) = moves[i];
@@ -179,24 +182,35 @@ fn upOne(old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
       _      => 1  // diagonal
     };
     let (oteam, oval) = getRich(old.values[dy+y][dx+x]);
-    counts[oteam as int] += strength * oval;
+    counts[oteam as int][0] += strength * oval;
+    counts[oteam as int][1] += 1;
   }
   match team {
     Blank => upBlank(current, x, y, &counts),
-    _ => upTeam(current, x, y, teamDiff(team, &counts), team, cval)
+    _ => upTeam(current, x, y, teamDiff(team, &counts, cval), team, cval)
   }
 }
 
-fn upBlank(current: &mut Matrix, x: uint, y: uint, counts: &[u8, ..4]) {
+fn upBlank(current: &mut Matrix, x: uint, y: uint, counts: &[[u8, ..2], ..4]) {
   let mut which: u8 = 0;
   let mut what: u8 = 0;
+  let mut when: u8 = 0;
   for i in range(0 as u8, 4) {
-    if counts[i] > what {
-      what = counts[i];
+    if counts[i][0] > what {
+      what = counts[i][0];
+      when = counts[i][1];
       which = i;
     }
   }
-  current.values[y][x] = getPoor(numTeam(which), what);
+  //if what > 1 {
+  if (when > 0) {
+    let nval = what / when / 2 - 1;
+    if nval < 1 {
+      which = 0;
+    }
+    current.values[y][x] = getPoor(numTeam(which), nval);
+  }
+  //}
 }
 
 fn predator(team: Team) -> Team {
@@ -228,25 +242,26 @@ fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, team: Team, cval: u8
   };
 }
 
-fn teamDiff(team: Team, counts: &[u8, ..4]) -> i8 {
+fn teamDiff(team: Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
   // let empty = counts[Blank as int] as i8;
-  let food = counts[prey(team) as int] as i8;
-  let danger = counts[predator(team) as int] as i8;
-  let friends = counts[team as int] as i8;
+  let food = counts[prey(team) as int];
+  let danger = counts[predator(team) as int];
+  let friends = counts[team as int];
   // 12
-  if food + danger + friends > 10 {
+  /*
+  if food + danger + friends > 5 {
     -1
   } else if danger > friends {
     -1// -danger + friends + food/2
-  } else if friends > 6 {
+  } else if friends > 3 {
     -1
   } else if food > 0 {
-    1
-  } else if friends < 3 {
     1
   } else {
     0
   }
+  */
+  0
 }
 
 fn advance(old: &Matrix, current: &mut Matrix) {
@@ -255,6 +270,28 @@ fn advance(old: &Matrix, current: &mut Matrix) {
       upOne(old, current, x, y);
     }
   }
+}
+
+fn px(current: &mut Matrix) {
+  let xs = (current.width/20) as int;
+  let ys = (current.height/20) as int;
+  for i in range(0, 20) {
+    fill(current, i * xs, i * ys, xs, ys, ((i % 3)*10 + 10) as u8)
+  }
+}
+
+fn prefill(current: &mut Matrix) {
+  if false {
+    px(current)
+  } else {
+    sep(current)
+  }
+}
+
+fn sep(current: &mut Matrix) {
+  fill(current, 5, 5, 10, 10, 10);
+  fill(current, 45, 45, 10, 10, 20);
+  fill(current, 85, 85, 10, 10, 30);
 }
 
 #[main]
@@ -272,11 +309,15 @@ pub fn main() {
   let mut current = &mut two;
   let mut third:&mut Matrix;
 
+  /*
   fill(current, 30, 60, 10, 10, 1);
   for i in range(0, 30) {
     fill(current, 0, 10 + i * 2, 100, 2, i as u8);
     //fill(current, 0, 0 + i*4, 20, 4, i as u8);
   }
+  */
+
+  prefill(current);
 
   let going = true;
 
