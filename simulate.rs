@@ -247,6 +247,15 @@ fn teamDiff(team: Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
   let food = counts[prey(team) as int];
   let danger = counts[predator(team) as int];
   let friends = counts[team as int];
+  if danger[1] > 0 {
+    -1
+  } else if food[1] > 0 {
+    1
+  } else if friends[1] > 5 {
+    -1
+  } else {
+    0
+  }
   // 12
   /*
   if food + danger + friends > 5 {
@@ -261,7 +270,6 @@ fn teamDiff(team: Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
     0
   }
   */
-  0
 }
 
 fn advance(old: &Matrix, current: &mut Matrix) {
@@ -281,7 +289,7 @@ fn px(current: &mut Matrix) {
 }
 
 fn prefill(current: &mut Matrix) {
-  if false {
+  if true {
     px(current)
   } else {
     sep(current)
