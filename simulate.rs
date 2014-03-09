@@ -97,9 +97,9 @@ fn getTeam(val: u8) -> Team {
   }
 }
 
-fn colorize(val: u8) -> Color {
+fn light(val: u8) -> Color {
   match getTeam(val) {
-    Blank => RGB(0,0,0),
+    Blank => RGB(255,255,255),
     Blue  => RGB(val * 10, val * 10, 155 + val * 10),
     Green => {
       let v = val - 10;
@@ -109,6 +109,29 @@ fn colorize(val: u8) -> Color {
       let v = val - 20;
       RGB(155 + v * 10, v * 10, v * 10)
     }
+  }
+}
+
+fn dark(val: u8) -> Color {
+  match getTeam(val) {
+    Blank => RGB(0,0,0),
+    Blue  => RGB(0, 0, val*10),
+    Green => {
+      let v = val - 10;
+      RGB(0, v*10, 0)
+    },
+    Red   => {
+      let v = val - 20;
+      RGB(v*10, 0, 0)
+    }
+  }
+}
+
+fn colorize(val: u8) -> Color {
+  if (false) {
+    light(val)
+  } else {
+    dark(val)
   }
 }
 
