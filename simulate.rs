@@ -251,7 +251,7 @@ fn teamDiff(team: Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
     -1
   } else if food[1] > 0 {
     1
-  } else if friends[1] > 5 {
+  } else if friends[1] > 4 {
     -1
   } else {
     0
