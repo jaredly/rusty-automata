@@ -288,11 +288,20 @@ fn px(current: &mut Matrix) {
   }
 }
 
+fn threes(current: &mut Matrix) {
+  fill(current, 45, 45, 10, 10, 10);
+  fill(current, 55, 55, 10, 10, 20);
+  fill(current, 55, 45, 10, 10, 30);
+  fill(current, 45, 55, 10, 10, 30);
+}
+
 fn prefill(current: &mut Matrix) {
-  if true {
+  if false {
     px(current)
-  } else {
+  } else if false {
     sep(current)
+  } else {
+    threes(current)
   }
 }
 
@@ -337,7 +346,7 @@ pub fn main() {
         sdl::event::KeyEvent(k, _, _, _)
                   if k == sdl::event::EscapeKey
                       => break 'main,
-                _ => {}
+                _ => {prefill(current)}
       }
     }
     if going {
