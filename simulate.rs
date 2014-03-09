@@ -233,7 +233,7 @@ fn prey(team: Team) -> Team {
 
 fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, team: Team, cval: u8) {
   let now = cval as i8 + diff;
-  current.values[y][x] = if now < 0 {
+  current.values[y][x] = if now <= 0 {
     0
   } else if now > 10 {
     getPoor(team, 10)
@@ -346,7 +346,8 @@ pub fn main() {
         sdl::event::KeyEvent(k, _, _, _)
                   if k == sdl::event::EscapeKey
                       => break 'main,
-                _ => {prefill(current)}
+        sdl::event::KeyEvent(k, _, _, _) => prefill(current),
+                _ => {}
       }
     }
     if going {
