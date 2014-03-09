@@ -350,6 +350,19 @@ pub fn main() {
                   if k == sdl::event::EscapeKey
                       => break 'main,
         sdl::event::KeyEvent(k, _, _, _) => prefill(current),
+        sdl::event::MouseMotionEvent(st, x, y, _, _) => {
+          if st.len() > 0 {
+          //st.iter().map(|&flag| {
+            //match flag {
+              //sdl::event::LeftMouseState => {
+                current.values[y as uint * current.height / config.height][x as uint * current.width / config.width] = 10;
+              //},
+              //_ => {}
+            //};
+          //});
+          }
+        },
+
                 _ => {}
       }
     }
