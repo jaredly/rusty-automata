@@ -234,7 +234,7 @@ fn teamDiff(team: Team, counts: &[u8, ..4]) -> i8 {
   let danger = counts[predator(team) as int] as i8;
   let friends = counts[team as int] as i8;
   // 12
-  if danger * 3 > friends * 2 + food {
+  if danger > friends {
     -1// -danger + friends + food/2
   } else if friends > 6 {
     -1
