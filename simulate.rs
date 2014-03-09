@@ -249,10 +249,12 @@ fn teamDiff(team: Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
   let friends = counts[team as int];
   if danger[1] > 0 {
     -1
-  } else if friends[1] > 4 {
+  } else if friends[1] > 6 {
     -1
   } else if food[1] > 0 {
     1
+  } else if friends[1] < 2 {
+    -1
   } else {
     0
   }
@@ -291,8 +293,9 @@ fn px(current: &mut Matrix) {
 fn threes(current: &mut Matrix) {
   fill(current, 45, 45, 10, 10, 10);
   fill(current, 55, 55, 10, 10, 20);
-  fill(current, 55, 45, 10, 10, 30);
+  //fill(current, 55, 45, 10, 10, 30);
   fill(current, 45, 55, 10, 10, 30);
+  fill(current, 60, 60, 10, 10, 10);
 }
 
 fn prefill(current: &mut Matrix) {
