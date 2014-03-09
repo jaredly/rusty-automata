@@ -1,141 +1,24 @@
 extern crate sdl;
+use matrix::{Matrix, init};
+use sdl::video::{Color, RGB, Surface};
+use utils::{Blank, Blue, Green, Red};
 
 // use std::rand::Rng;
 // use std::rand;
 
-use sdl::video::{Color, RGB, Surface};
-
-struct Matrix {
-  values: ~[~[u8]],
-  width: uint,
-  height: uint
-}
+// mod button;
+mod utils;
+mod patterns;
+mod colors;
+mod matrix;
 
 struct Config {
+  going: bool,
   width: uint,
-  height: uint
-}
-
-enum Team {
-  Blank = 0,
-  Blue = 1,
-  Green = 2,
-  Red = 3
-}
-
-fn numTeam(val: u8) -> Team {
-  match val {
-    0 => Blank,
-    1 => Blue,
-    2 => Green,
-    3 => Red,
-    _ => Blank
-  }
-}
-
-fn maketrix(width: uint, height: uint) -> ~[~[u8]] {
-  let mut matrix: ~[~[u8]] = ~[];
-  for _ in range(0, height) {
-    let mut sub: ~[u8] = ~[];
-    for _ in range(0, width) {
-      sub.push(0);
-    }
-    matrix.push(sub)
-  }
-  matrix
-}
-
-fn init(width: uint, height: uint) -> (Matrix, Matrix) {
-  let one = Matrix {
-    values: maketrix(width, height),
-    width: width,
-    height: height
-  };
-  let two = Matrix {
-    values: maketrix(width, height),
-    width: width,
-    height: height
-  };
-  // x[0][0] = 100;
-  (one, two)
-}
-
-fn fill(mx: &mut Matrix, x: int, y: int, w: int, h: int, val: u8) {
-  for cx in range(x, x+w) {
-    for cy in range(y, y+h) {
-      mx.values[cy][cx] = val;
-    }
-  }
-}
-
-fn getRich(val: u8) -> (Team, u8) {
-  match val {
-     0     => (Blank, 0),
-     1..10 => (Blue, val),
-    11..20 => (Green, val - 10),
-    12..30 => (Red, val - 20),
-    _      => (Blank, 0)
-  }
-}
-
-fn getPoor(team: Team, mut val: u8) -> u8 {
-  if val > 10 {
-    val = 10;
-  }
-  match team {
-    Blank => 0,
-    Blue => val,
-    Green => val + 10,
-    Red => val + 20
-  }
-}
-
-fn getTeam(val: u8) -> Team {
-  match val {
-     0     => Blank,
-     1..10 => Blue,
-    11..20 => Green,
-    12..30 => Red,
-    _      => Blank
-  }
-}
-
-fn light(val: u8) -> Color {
-  match getTeam(val) {
-    Blank => RGB(255,255,255),
-    Blue  => RGB(val * 10, val * 10, 155 + val * 10),
-    Green => {
-      let v = val - 10;
-      RGB(v * 10, 155 + v * 10, v * 10)
-    },
-    Red   => {
-      let v = val - 20;
-      RGB(155 + v * 10, v * 10, v * 10)
-    }
-  }
-}
-
-fn dark(val: u8) -> Color {
-  match getTeam(val) {
-    Blank => RGB(0,0,0),
-    Blue  => RGB(0, 0, val*10),
-    Green => {
-      let v = val - 10;
-      RGB(0, v*10, 0)
-    },
-    Red   => {
-      let v = val - 20;
-      RGB(v*10, 0, 0)
-    }
-  }
-}
-
-fn colorize(val: u8) -> Color {
-  if false {
-    light(val)
-  } else {
-    dark(val)
-  }
+  height: uint,
+  theme: colors::Theme,
+  pattern: patterns::Pattern,
+  team: utils::Team
 }
 
 fn draw(config: &Config, screen: &sdl::video::Surface, mx: &Matrix) {
@@ -148,7 +31,7 @@ fn draw(config: &Config, screen: &sdl::video::Surface, mx: &Matrix) {
         y: (y as i16) * yscale,
         w: xscale as u16,
         h: yscale as u16
-      }), colorize(mx.values[y][x]));
+      }), colors::colorize(config.theme, mx.values[y][x]));
     }
   }
 }
@@ -168,7 +51,7 @@ fn initScreen(config: Config) -> ~Surface {
 fn upOne(old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
   let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
   let mut counts:[[u8, ..2], ..4] = [[0,0],[0,0],[0,0],[0,0]];
-  let (team, cval) = getRich(old.values[y][x]);
+  let (team, cval) = utils::getRich(old.values[y][x]);
   for i in range(0, 8) {
     let (dx, dy) = moves[i];
     if dx + x < 0 ||
@@ -181,7 +64,7 @@ fn upOne(old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
       1 | -1 => 2, // straight
       _      => 1  // diagonal
     };
-    let (oteam, oval) = getRich(old.values[dy+y][dx+x]);
+    let (oteam, oval) = utils::getRich(old.values[dy+y][dx+x]);
     counts[oteam as int][0] += strength * oval;
     counts[oteam as int][1] += 1;
   }
@@ -208,44 +91,26 @@ fn upBlank(current: &mut Matrix, x: uint, y: uint, counts: &[[u8, ..2], ..4]) {
     if nval < 2 {
       which = 0;
     }
-    current.values[y][x] = getPoor(numTeam(which), nval - 1);
+    current.values[y][x] = utils::getPoor(utils::numTeam(which), nval - 1);
   }
   //}
 }
 
-fn predator(team: Team) -> Team {
-  match team {
-    Blank => Blank,
-    Green => Blue,
-    Blue => Red,
-    Red => Green
-  }
-}
-
-fn prey(team: Team) -> Team {
-  match team {
-    Blank => Blank,
-    Green => Red,
-    Blue => Green,
-    Red => Blue
-  }
-}
-
-fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, team: Team, cval: u8) {
+fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, team: utils::Team, cval: u8) {
   let now = cval as i8 + diff;
   current.values[y][x] = if now <= 0 {
     0
   } else if now > 10 {
-    getPoor(team, 10)
+    utils::getPoor(team, 10)
   } else {
-    getPoor(team, now as u8)
+    utils::getPoor(team, now as u8)
   };
 }
 
-fn teamDiff(team: Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
+fn teamDiff(team: utils::Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
   // let empty = counts[Blank as int] as i8;
-  let food = counts[prey(team) as int];
-  let danger = counts[predator(team) as int];
+  let food = counts[utils::prey(team) as int];
+  let danger = counts[utils::predator(team) as int];
   let friends = counts[team as int];
   if danger[1] > 0 {
     -1
@@ -282,44 +147,19 @@ fn advance(old: &Matrix, current: &mut Matrix) {
   }
 }
 
-fn px(current: &mut Matrix) {
-  let xs = (current.width/20) as int;
-  let ys = (current.height/20) as int;
-  for i in range(0, 20) {
-    fill(current, i * xs, i * ys, xs, ys, ((i % 3)*10 + 10) as u8)
-  }
-}
-
-fn threes(current: &mut Matrix) {
-  fill(current, 45, 45, 10, 10, 10);
-  fill(current, 55, 55, 10, 10, 20);
-  //fill(current, 55, 45, 10, 10, 30);
-  fill(current, 45, 55, 10, 10, 30);
-  fill(current, 60, 60, 10, 10, 10);
-}
-
-fn prefill(current: &mut Matrix) {
-  if false {
-    px(current)
-  } else if false {
-    sep(current)
-  } else {
-    threes(current)
-  }
-}
-
-fn sep(current: &mut Matrix) {
-  fill(current, 5, 5, 10, 10, 10);
-  fill(current, 45, 45, 10, 10, 20);
-  fill(current, 85, 85, 10, 10, 30);
-}
-
 #[main]
 pub fn main() {
   sdl::init([sdl::InitVideo]);
   sdl::wm::set_caption("Rust Simulator", "rust-sdl");
 
-  let config = Config {width: 400, height: 400};
+  let mut config = Config {
+    width: 400,
+    height: 400,
+    theme: colors::Dark,
+    pattern: patterns::Cross,
+    team: Red,
+    going: true
+  };
 
   // let mut rng = rand::rng();
   let screen = initScreen(config);
@@ -329,7 +169,7 @@ pub fn main() {
   let mut current = &mut two;
   let mut third:&mut Matrix;
 
-  prefill(current);
+  patterns::prefill(config.pattern, current);
 
   let going = true;
 
@@ -341,17 +181,43 @@ pub fn main() {
         sdl::event::KeyEvent(k, _, _, _)
                   if k == sdl::event::EscapeKey
                       => break 'main,
-        sdl::event::KeyEvent(k, _, _, _) => prefill(current),
-        sdl::event::MouseMotionEvent(st, x, y, _, _) => {
-          if st.len() > 0 {
-            current.values[y as uint * current.height / config.height][x as uint * current.width / config.width] = 10;
+        sdl::event::KeyEvent(k, down, _, _) if down => {
+          match k {
+            // C: color change (mouse clicking)
+            sdl::event::CKey => {
+              config.team = utils::nextTeam(config.team)
+            },
+            // P: pause/play
+            sdl::event::PKey => {
+              config.going = !config.going
+            },
+            // T: theme change
+            sdl::event::TKey => {
+              config.theme = colors::nextTheme(config.theme);
+            },
+            // D: pattern change
+            sdl::event::DKey => {
+              config.pattern = patterns::nextPattern(config.pattern);
+              old.fill(0,0,100,100,0);
+              patterns::prefill(config.pattern, current)
+            },
+            // SPACE: restart
+            sdl::event::SpaceKey => {
+              old.fill(0,0,100,100,0);
+              patterns::prefill(config.pattern, current)
+            },
+            _ => {}
           }
         },
-
-                _ => {}
+        sdl::event::MouseMotionEvent(st, x, y, _, _) => {
+          if st.len() > 0 {
+            current.values[y as uint * current.height / config.height][x as uint * current.width / config.width] = utils::getPoor(config.team, 10);
+          }
+        },
+        _ => {}
       }
     }
-    if going {
+    if config.going {
       third = old;
       old = current;
       current = third;
