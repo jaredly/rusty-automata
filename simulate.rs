@@ -50,9 +50,41 @@ fn initScreen(config: Config) -> ~Surface {
   }
 }
 
-fn getCounts(old: &Matrix, x: uint, y: uint) -> [[u8, ..2], ..4] {
+struct Count {
+  sum: u8,
+  num: u8,
+  max: u8,
+  // corners
+  csum: u8,
+  cnum: u8,
+  cmax: u8,
+  // manhatten
+  msum: u8,
+  mnum: u8,
+  mmax: u8
+}
+
+impl Count {
+  fn new() -> Count {
+    Count {
+      sum:0,
+      num:0,
+      max:0,
+
+      csum:0,
+      cnum:0,
+      cmax:0,
+
+      msum:0,
+      mnum:0,
+      mmax:0
+    }
+  }
+}
+
+fn getCounts(old: &Matrix, x: uint, y: uint) -> [Count, ..4] {
   let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
-  let mut counts:[[u8, ..2], ..4] = [[0,0],[0,0],[0,0],[0,0]];
+  let mut counts:[Count, ..4] = [Count::new(), ..4];
   for i in range(0, 8) {
     let (dx, dy) = moves[i];
     if dx + x < 0 ||
@@ -61,13 +93,28 @@ fn getCounts(old: &Matrix, x: uint, y: uint) -> [[u8, ..2], ..4] {
         dy + y >= old.height {
       continue;
     }
-    let strength = match dx + dy {
-      1 | -1 => 2, // straight
-      _      => 1  // diagonal
-    };
     let (oteam, oval) = utils::getRich(old.values[dy+y][dx+x]);
-    counts[oteam as int][0] += strength * oval;
-    counts[oteam as int][1] += 1;
+    counts[oteam as int].sum += oval;
+    counts[oteam as int].num += 1;
+    if oval > counts[oteam as int].max {
+      counts[oteam as int].max = oval;
+    }
+    match dx + dy {
+      1 | -1 => { // straight
+        counts[oteam as int].msum += oval;
+        counts[oteam as int].mnum += 1;
+        if oval > counts[oteam as int].mmax {
+          counts[oteam as int].mmax = oval;
+        }
+      },
+      _ => { // diagonal
+        counts[oteam as int].csum += oval;
+        counts[oteam as int].cnum += 1;
+        if oval > counts[oteam as int].cmax {
+          counts[oteam as int].cmax = oval;
+        }
+      }
+    };
   }
   counts
 }
@@ -91,35 +138,31 @@ fn predates(one: u8, other: u8) -> bool {
   }
 }
 
-fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[[u8, ..2], ..4]) {
+fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[Count, ..4]) {
   let mut which: u8 = 0;
-  let mut what: u8 = 0;
-  let mut when: u8 = 0;
-  for i in range(0 as u8, 4) {
+  let mut count = Count::new();
+  for i in range(1 as u8, 4) {
     let wins = if predates(which, i) {
-      counts[i][0] > what + 4
+      counts[i].num > count.num + 4
     } else if predates(i, which) {
-      counts[i][0] >= what - 4
+      counts[i].num >= count.num - 4
     } else {
-      counts[i][0] > what
+      counts[i].num > count.num
     };
     if wins {
-      what = counts[i][0];
-      when = counts[i][1];
+      count = counts[i];
       which = i;
     }
   }
-  //if what > 1 {
-  if when > 0 {
-    let nval = what / when / 2;
-    if nval < 1 {
+  if count.num > 0 {
+    let nval = count.sum / count.num;
+    if nval < 2 {
       which = 0;
     }
     current.values[y][x] = utils::getPoor(utils::numTeam(which), nval - 1);
   } else {
     current.values[y][x] = 0;
   }
-  //}
 }
 
 fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, team: utils::Team, cval: u8) {
@@ -133,20 +176,20 @@ fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, team: utils::Team, c
   };
 }
 
-fn teamDiff(rules: &Rules, team: utils::Team, counts: &[[u8, ..2], ..4], cval: u8) -> i8 {
+fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..4], cval: u8) -> i8 {
   // let empty = counts[Blank as int] as i8;
   let food = counts[utils::prey(team) as int];
   let danger = counts[utils::predator(team) as int];
   let friends = counts[team as int];
-  if (rules.gang && danger[1] > friends[1]) || danger[1] >= rules.danger {
+  if (rules.gang && danger.num > friends.num) || danger.num >= rules.danger {
     -1
-  } else if friends[1] >= rules.crowd {
+  } else if friends.num >= rules.crowd {
     -1
-  } else if friends[1] <= rules.alone {
+  } else if friends.num <= rules.alone {
     -1
-  } else if food[1] >= rules.food {
+  } else if food.num >= rules.food {
     1
-  } else if friends[0] > cval * friends[1] * 2 {
+  } else if friends.num >= rules.support && (friends.mmax > cval + 1 || friends.cmax > cval + 3) {
     1
   } else {
     0
@@ -178,6 +221,7 @@ pub fn main() {
   let mut rules = Rules {
     danger: 1,
     crowd: 20,
+    support: 5,
     alone: 3,
     food: 1,
     gang: false
