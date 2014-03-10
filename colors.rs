@@ -1,6 +1,6 @@
 use sdl::video::{Color, RGB, Surface};
 use utils;
-use utils::{Blank, Blue, Green, Red};
+use utils::{Blank, Blue, Green, Red, Yellow};
 
 pub enum Theme {
   Light,
@@ -32,6 +32,10 @@ fn light(val: u8) -> Color {
     Red   => {
       let v = val - 20;
       RGB(255, 255 - v * 20, 255 - v * 20)
+    },
+    Yellow => {
+      let v = val - 30;
+      RGB(255, 255, 255 - v * 20)
     }
   }
 }
@@ -47,6 +51,10 @@ fn dark(val: u8) -> Color {
     Red   => {
       let v = val - 20;
       RGB(v*25, 0, 0)
+    },
+    Yellow => {
+      let v = val - 30;
+      RGB(v*25, v*25, 0)
     }
   }
 }

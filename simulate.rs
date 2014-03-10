@@ -1,7 +1,7 @@
 extern crate sdl;
 use matrix::{Matrix, init};
 use sdl::video::{Color, RGB, Surface};
-use utils::{Blank, Blue, Green, Red};
+use utils::{Blank, Red};
 use rules::Rules;
 
 // use std::rand::Rng;
@@ -84,9 +84,9 @@ impl Count {
   }
 }
 
-fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..4] {
+fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..5] {
   let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
-  let mut counts:[Count, ..4] = [Count::new(), ..4];
+  let mut counts:[Count, ..5] = [Count::new(), ..5];
   for i in range(0, 8) {
     let (dx, dy) = moves[i];
     if dx + x < 0 ||
@@ -139,15 +139,16 @@ fn predates(one: u8, other: u8) -> bool {
     0 => false,
     1 => other == 2,
     2 => other == 3,
-    3 => other == 1,
+    3 => other == 4,
+    4 => other == 1,
     _ => false
   }
 }
 
-fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[Count, ..4]) {
+fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[Count, ..5]) {
   let mut which: u8 = 0;
   let mut count = Count::new();
-  for i in range(0 as u8, 4) {
+  for i in range(0 as u8, 5) {
     let wins = if counts[i].num > 0 {
       if predates(which, i) {
         counts[i].num > count.num + 4
@@ -175,7 +176,7 @@ fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[Coun
   }
 }
 
-fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..4], team: utils::Team, cval: u8) {
+fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..5], team: utils::Team, cval: u8) {
   let now = cval as i8 + diff;
   current.values[y][x] = if now <= 0 {
     if counts[utils::predator(team) as int].num > 0 && counts[utils::predator(team) as int].max > 1 {
@@ -190,7 +191,7 @@ fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..4
   };
 }
 
-fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..4], cval: u8) -> i8 {
+fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..5], cval: u8) -> i8 {
   // let empty = counts[Blank as int] as i8;
   let food = counts[utils::prey(team) as int];
   let danger = counts[utils::predator(team) as int];
