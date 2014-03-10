@@ -148,12 +148,16 @@ fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[Coun
   let mut which: u8 = 0;
   let mut count = Count::new();
   for i in range(0 as u8, 4) {
-    let wins = if predates(which, i) {
-      counts[i].num > count.num + 4
-    } else if predates(i, which) {
-      counts[i].num + 4 >= count.num
+    let wins = if counts[i].num > 0 {
+      if predates(which, i) {
+        counts[i].num > count.num + 4
+      } else if predates(i, which) {
+        counts[i].num + 4 >= count.num
+      } else {
+        counts[i].num > count.num
+      }
     } else {
-      counts[i].num > count.num
+      false
     };
     if wins {
       count = counts[i];
