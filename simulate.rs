@@ -54,6 +54,7 @@ struct Count {
   sum: u8,
   num: u8,
   max: u8,
+  greater: u8,
   // corners
   csum: u8,
   cnum: u8,
@@ -70,6 +71,7 @@ impl Count {
       sum:0,
       num:0,
       max:0,
+      greater: 0,
 
       csum:0,
       cnum:0,
@@ -82,7 +84,7 @@ impl Count {
   }
 }
 
-fn getCounts(old: &Matrix, x: uint, y: uint) -> [Count, ..4] {
+fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..4] {
   let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
   let mut counts:[Count, ..4] = [Count::new(), ..4];
   for i in range(0, 8) {
@@ -98,6 +100,9 @@ fn getCounts(old: &Matrix, x: uint, y: uint) -> [Count, ..4] {
     counts[oteam as int].num += 1;
     if oval > counts[oteam as int].max {
       counts[oteam as int].max = oval;
+    }
+    if oval > cval {
+      counts[oteam as int].greater += 1;
     }
     match dx + dy {
       1 | -1 => { // straight
@@ -120,15 +125,16 @@ fn getCounts(old: &Matrix, x: uint, y: uint) -> [Count, ..4] {
 }
 
 fn upOne(rules: &Rules, old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
-  let counts = getCounts(old, x, y);
   let (team, cval) = utils::getRich(old.values[y][x]);
+  let counts = getCounts(old, x, y, cval);
   match team {
     Blank => upBlank(rules, current, x, y, &counts),
-    _ => upTeam(current, x, y, teamDiff(rules, team, &counts, cval), team, cval)
+    _ => upTeam(current, x, y, teamDiff(rules, team, &counts, cval), &counts, team, cval)
   }
 }
 
 fn predates(one: u8, other: u8) -> bool {
+  if other == 0 {return true}
   match one {
     0 => false,
     1 => other == 2,
@@ -141,11 +147,11 @@ fn predates(one: u8, other: u8) -> bool {
 fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[Count, ..4]) {
   let mut which: u8 = 0;
   let mut count = Count::new();
-  for i in range(1 as u8, 4) {
+  for i in range(0 as u8, 4) {
     let wins = if predates(which, i) {
       counts[i].num > count.num + 4
     } else if predates(i, which) {
-      counts[i].num >= count.num - 4
+      counts[i].num + 4 >= count.num
     } else {
       counts[i].num > count.num
     };
@@ -165,10 +171,14 @@ fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[Coun
   }
 }
 
-fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, team: utils::Team, cval: u8) {
+fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..4], team: utils::Team, cval: u8) {
   let now = cval as i8 + diff;
   current.values[y][x] = if now <= 0 {
-    0
+    if counts[utils::predator(team) as int].num > 0 && counts[utils::predator(team) as int].max > 1 {
+      utils::getPoor(utils::predator(team), 1)
+    } else {
+      0
+    }
   } else if now > 10 {
     utils::getPoor(team, 10)
   } else {
@@ -185,11 +195,12 @@ fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..4], cval: u8) -
     -1
   } else if friends.num >= rules.crowd {
     -1
-  } else if friends.num <= rules.alone {
-    -1
   } else if food.num >= rules.food {
     1
-  } else if friends.num >= rules.support && (friends.mmax > cval + 1 || friends.cmax > cval + 3) {
+  } else if friends.num <= rules.alone {
+    -1
+  } else if friends.greater >= 4 {
+  // } else if friends.num >= rules.support && (friends.mmax > cval + 1 || friends.cmax > cval + 3) {
     1
   } else {
     0
@@ -220,7 +231,7 @@ pub fn main() {
 
   let mut rules = Rules {
     danger: 1,
-    crowd: 20,
+    crowd: 8,
     support: 5,
     alone: 3,
     food: 1,
