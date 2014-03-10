@@ -4,14 +4,16 @@ use matrix::Matrix;
 pub enum Pattern {
   Cross,
   Threes,
-  Separate
+  Separate,
+  Impasse
 }
 
 pub fn nextPattern(now: Pattern) -> Pattern {
   match now {
     Cross => Threes,
     Threes => Separate,
-    Separate => Cross
+    Separate => Impasse,
+    Impasse => Cross
   }
 }
 
@@ -20,8 +22,14 @@ pub fn prefill(pattern: Pattern, current: &mut Matrix) {
   match pattern {
     Cross => cross(current),
     Separate => separate(current),
-    Threes => threes(current)
+    Threes => threes(current),
+    Impasse => impasse(current)
   }
+}
+
+fn impasse(current: &mut Matrix) {
+  current.fill(10, 12, 5, 16, 10);
+  current.fill(16, 10, 5, 20, 20);
 }
 
 pub fn cross(current: &mut Matrix) {

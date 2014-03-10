@@ -1,4 +1,5 @@
 
+use rules::RuleKey;
 use sdl::video::{Color, RGB, Surface};
 use sdl::event::{MouseButtonEvent, LeftMouse, Event};
 use sdl;
@@ -9,31 +10,41 @@ pub struct Button {
 	width: uint,
 	height: uint,
   clicked: bool,
-	color: Color
+	color: Color,
+  value: int,
+  action: RuleKey
 }
 
 impl Button {
-  fn hit(&self, x: u16, y:u16) -> bool {
-    return x < self.x ||
-       y < self.y ||
-       x > self.x + self.width ||
-       y > self.y + self.height;
+  fn hit(&self, x: uint, y:uint) -> bool {
+    return x > self.x &&
+           y > self.y &&
+           x < self.x + self.width &&
+           y < self.y + self.height;
   }
-  fn down(&mut self, down: bool, x: u16, y: u16) {
-    if !self.hit(x, y) {
-      return;
-    }
+
+  fn click(&mut self, down: bool, x: u16, y: u16) {
     if down || !self.clicked {
       self.clicked = true;
       return;
     }
-    self.action();
+    self.value += if (x as uint) < self.x + self.width/2 {
+      1
+    } else {
+      -1
+    };
+    if self.value < 0 {
+      self.value = 0
+    }
   }
 
-  fn event(&mut self, event: Event) -> bool {
+  pub fn event(&mut self, event: &Event) -> bool {
     match event {
-      MouseButtonEvent(which, down, x, y) => match which {
+      &MouseButtonEvent(which, down, x, y) => match which {
         LeftMouse => {
+          if !self.hit(x as uint, y as uint) {
+            return false;
+          }
           self.click(down, x, y);
           true
         },
@@ -43,13 +54,19 @@ impl Button {
     }
   }
 
-  fn draw(&self, surf: ~Surface) {
+  pub fn draw(&self, surf: &Surface) {
     surf.fill_rect(Some(sdl::Rect {
-      x: self.x,
-      y: self.y,
-      w: self.width,
-      h: self.height
+      x: self.x as i16,
+      y: self.y as i16,
+      w: self.width as u16,
+      h: self.height as u16
     }), self.color);
+    surf.fill_rect(Some(sdl::Rect {
+      x: (self.x + self.width/2 - 1) as i16,
+      y: self.y as i16,
+      w: 2,
+      h: self.height as u16
+    }), RGB(0,0,0));
   }
 }
 

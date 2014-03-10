@@ -24,14 +24,14 @@ pub fn nextTheme(theme: Theme) -> Theme {
 fn light(val: u8) -> Color {
   match utils::getTeam(val) {
     Blank => RGB(255,255,255),
-    Blue  => RGB(val * 10, val * 10, 155 + val * 10),
+    Blue  => RGB(255 - val * 20, 255 - val * 20, 255),
     Green => {
       let v = val - 10;
-      RGB(v * 10, 155 + v * 10, v * 10)
+      RGB(255 - v * 20, 255, 255 - v * 20)
     },
     Red   => {
       let v = val - 20;
-      RGB(155 + v * 10, v * 10, v * 10)
+      RGB(255, 255 - v * 20, 255 - v * 20)
     }
   }
 }
@@ -39,14 +39,14 @@ fn light(val: u8) -> Color {
 fn dark(val: u8) -> Color {
   match utils::getTeam(val) {
     Blank => RGB(0,0,0),
-    Blue  => RGB(0, 0, val*10),
+    Blue  => RGB(0, 0, val*25),
     Green => {
       let v = val - 10;
-      RGB(0, v*10, 0)
+      RGB(0, v*25, 0)
     },
     Red   => {
       let v = val - 20;
-      RGB(v*10, 0, 0)
+      RGB(v*25, 0, 0)
     }
   }
 }
