@@ -77,6 +77,7 @@ pub fn maketrix(width: uint, height: uint) -> ~[~[u8]] {
   matrix
 }
 
+// get the predator team of the provided team
 pub fn predator(team: Team) -> Team {
   match team {
     Blank => Blank,
@@ -87,6 +88,7 @@ pub fn predator(team: Team) -> Team {
   }
 }
 
+// get the prey team of the given team
 pub fn prey(team: Team) -> Team {
   match team {
     Blank => Blank,
@@ -94,6 +96,42 @@ pub fn prey(team: Team) -> Team {
     Green => Red,
     Red => Yellow,
     Yellow => Blue
+  }
+}
+
+pub enum Relationship {
+  Predator,
+  Prey,
+  Neutral
+}
+
+pub fn relationship(t1: Team, t2: Team) -> Relationship {
+  match t1 {
+    Blank => Prey,
+    Blue => match t2 {
+      Blank => Predator,
+    	Green => Predator,
+      Yellow => Prey,
+      _ => Neutral
+    },
+    Green => match t2 {
+      Blank => Predator,
+      Red => Predator,
+      Blue => Prey,
+      _ => Neutral
+    },
+    Red => match t2 {
+      Blank => Predator,
+      Yellow => Predator,
+      Green => Prey,
+      _ => Neutral
+    },
+    Yellow => match t2 {
+      Blank => Predator,
+      Blue => Predator,
+      Red => Prey,
+      _ => Neutral
+    }
   }
 }
 

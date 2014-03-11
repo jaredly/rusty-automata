@@ -14,6 +14,8 @@ mod colors;
 mod matrix;
 mod rules;
 
+static NTEAMS: uint = 5;
+
 struct Config {
   going: bool,
   width: uint,
@@ -51,6 +53,8 @@ fn initScreen(config: Config) -> ~Surface {
 }
 
 struct Count {
+  team: utils::Team,
+
   sum: u8,
   num: u8,
   max: u8,
@@ -68,6 +72,8 @@ struct Count {
 impl Count {
   fn new() -> Count {
     Count {
+      team:Blank,
+
       sum:0,
       num:0,
       max:0,
@@ -84,9 +90,9 @@ impl Count {
   }
 }
 
-fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..5] {
+fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..NTEAMS] {
   let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
-  let mut counts:[Count, ..5] = [Count::new(), ..5];
+  let mut counts:[Count, ..NTEAMS] = [Count::new(), ..NTEAMS];
   for i in range(0, 8) {
     let (dx, dy) = moves[i];
     if dx + x < 0 ||
@@ -96,27 +102,29 @@ fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..5] {
       continue;
     }
     let (oteam, oval) = utils::getRich(old.values[dy+y][dx+x]);
-    counts[oteam as int].sum += oval;
-    counts[oteam as int].num += 1;
-    if oval > counts[oteam as int].max {
-      counts[oteam as int].max = oval;
+    let count = &mut counts[oteam as int];
+    count.team = oteam;
+    count.sum += oval;
+    count.num += 1;
+    if oval > count.max {
+      count.max = oval;
     }
     if oval > cval {
-      counts[oteam as int].greater += 1;
+      count.greater += 1;
     }
     match dx + dy {
       1 | -1 => { // straight
-        counts[oteam as int].msum += oval;
-        counts[oteam as int].mnum += 1;
-        if oval > counts[oteam as int].mmax {
-          counts[oteam as int].mmax = oval;
+        count.msum += oval;
+        count.mnum += 1;
+        if oval > count.mmax {
+          count.mmax = oval;
         }
       },
       _ => { // diagonal
-        counts[oteam as int].csum += oval;
-        counts[oteam as int].cnum += 1;
-        if oval > counts[oteam as int].cmax {
-          counts[oteam as int].cmax = oval;
+        count.csum += oval;
+        count.cnum += 1;
+        if oval > count.cmax {
+          count.cmax = oval;
         }
       }
     };
@@ -126,9 +134,9 @@ fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..5] {
 
 fn upOne(rules: &Rules, old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
   let (team, cval) = utils::getRich(old.values[y][x]);
-  let counts = getCounts(old, x, y, cval);
+  let mut counts = getCounts(old, x, y, cval);
   match team {
-    Blank => upBlank(rules, current, x, y, &counts),
+    Blank => upBlank(rules, current, x, y, &mut counts),
     _ => upTeam(current, x, y, teamDiff(rules, team, &counts, cval), &counts, team, cval)
   }
 }
@@ -145,38 +153,46 @@ fn predates(one: u8, other: u8) -> bool {
   }
 }
 
-fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &[Count, ..5]) {
-  let mut which: u8 = 0;
-  let mut count = Count::new();
-  for i in range(0 as u8, 5) {
-    let wins = if counts[i].num > 0 {
-      if predates(which, i) {
-        counts[i].num > count.num + 4
-      } else if predates(i, which) {
-        counts[i].num + 4 >= count.num
-      } else {
-        counts[i].num > count.num
-      }
-    } else {
-      false
+fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [Count, ..NTEAMS]) {
+
+  counts.sort_by(|a, b| {
+    let rel = utils::relationship(a.team, b.team);
+    let diff = match rel {
+      utils::Predator => 4,
+      utils::Prey => -5,
+      utils::Neutral => 0
     };
-    if wins {
-      count = counts[i];
-      which = i;
-    }
-  }
+    let bn = b.cnum + b.mnum * 2;
+    let an = a.cnum + a.mnum * 2;
+    return (bn as i8).cmp(&(an as i8 + diff));
+  });
+
+  let i = match counts[0].team {
+    Blank => 1,
+    _ => 0
+  };
+  match utils::relationship(counts[i].team, counts[i+1].team) {
+    utils::Neutral => {
+      current.values[y][x] = 0;
+      return;
+    },
+    _ => {}
+  };
+  let count = &counts[i];
+
   if count.num > 0 {
     let nval = count.sum / count.num;
     if nval < 2 {
-      which = 0;
+      current.values[y][x] = 0;
+    } else {
+      current.values[y][x] = utils::getPoor(count.team, nval - 1);
     }
-    current.values[y][x] = utils::getPoor(utils::numTeam(which), nval - 1);
   } else {
     current.values[y][x] = 0;
   }
 }
 
-fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..5], team: utils::Team, cval: u8) {
+fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..NTEAMS], team: utils::Team, cval: u8) {
   let now = cval as i8 + diff;
   current.values[y][x] = if now <= 0 {
     if counts[utils::predator(team) as int].num > 0 && counts[utils::predator(team) as int].max > 1 {
@@ -191,7 +207,7 @@ fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..5
   };
 }
 
-fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..5], cval: u8) -> i8 {
+fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..NTEAMS], cval: u8) -> i8 {
   // let empty = counts[Blank as int] as i8;
   let food = counts[utils::prey(team) as int];
   let danger = counts[utils::predator(team) as int];
@@ -226,8 +242,8 @@ pub fn main() {
   sdl::wm::set_caption("Rust Simulator", "rust-sdl");
 
   let mut config = Config {
-    width: 800,
-    height: 800,
+    width: 400,
+    height: 400,
     theme: colors::Dark,
     pattern: patterns::Cross,
     team: Red,
@@ -236,7 +252,7 @@ pub fn main() {
 
   let mut rules = Rules {
     danger: 1,
-    crowd: 8,
+    crowd: 9,
     support: 5,
     alone: 3,
     food: 1,
