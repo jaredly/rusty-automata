@@ -2,6 +2,7 @@
 use matrix::Matrix;
 
 pub enum Pattern {
+  Test,
   Cross,
   Threes,
   Separate,
@@ -10,11 +11,41 @@ pub enum Pattern {
 
 pub fn nextPattern(now: Pattern) -> Pattern {
   match now {
+    Test => Cross,
     Cross => Threes,
     Threes => Separate,
     Separate => Impasse,
-    Impasse => Cross
+    Impasse => Test
   }
+}
+
+pub fn test(current: &mut Matrix) {
+  current.values[21][20] = 10;
+  current.values[20][20] = 10;
+  current.values[20][21] = 10;
+
+  current.values[20][22] = 20;
+  current.values[20][23] = 20;
+  current.values[21][23] = 20;
+
+  current.values[22][23] = 30;
+  current.values[23][23] = 30;
+  current.values[23][22] = 30;
+
+  current.values[23][21] = 40;
+  current.values[23][20] = 40;
+  current.values[22][20] = 40;
+
+
+  current.values[70][70] = 10;
+  current.values[71][71] = 10;
+  current.values[72][71] = 20;
+  current.values[73][70] = 20;
+  current.values[73][69] = 30;
+  current.values[72][68] = 30;
+  current.values[71][68] = 40;
+  current.values[70][69] = 40;
+
 }
 
 pub fn prefill(pattern: Pattern, current: &mut Matrix) {
@@ -23,7 +54,8 @@ pub fn prefill(pattern: Pattern, current: &mut Matrix) {
     Cross => cross(current),
     Separate => separate(current),
     Threes => threes(current),
-    Impasse => impasse(current)
+    Impasse => impasse(current),
+    Test => test(current)
   }
 }
 

@@ -1,7 +1,7 @@
 extern crate sdl;
 use matrix::{Matrix, init};
 use sdl::video::{Color, RGB, Surface};
-use utils::{Blank, Red};
+use utils::{Blank, Red, NTEAMS, Count};
 use rules::Rules;
 
 // use std::rand::Rng;
@@ -13,8 +13,6 @@ mod patterns;
 mod colors;
 mod matrix;
 mod rules;
-
-static NTEAMS: uint = 5;
 
 struct Config {
   going: bool,
@@ -52,43 +50,6 @@ fn initScreen(config: Config) -> ~Surface {
   }
 }
 
-struct Count {
-  team: utils::Team,
-
-  sum: u8,
-  num: u8,
-  max: u8,
-  greater: u8,
-  // corners
-  csum: u8,
-  cnum: u8,
-  cmax: u8,
-  // manhatten
-  msum: u8,
-  mnum: u8,
-  mmax: u8
-}
-
-impl Count {
-  fn new() -> Count {
-    Count {
-      team:Blank,
-
-      sum:0,
-      num:0,
-      max:0,
-      greater: 0,
-
-      csum:0,
-      cnum:0,
-      cmax:0,
-
-      msum:0,
-      mnum:0,
-      mmax:0
-    }
-  }
-}
 
 fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..NTEAMS] {
   let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
@@ -155,27 +116,26 @@ fn predates(one: u8, other: u8) -> bool {
 
 fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [Count, ..NTEAMS]) {
 
-  counts.sort_by(|a, b| {
-    let rel = utils::relationship(a.team, b.team);
-    let diff = match rel {
-      utils::Predator => 4,
-      utils::Prey => -5,
-      utils::Neutral => 0
-    };
-    let bn = b.cnum + b.mnum * 2;
-    let an = a.cnum + a.mnum * 2;
-    return (bn as i8).cmp(&(an as i8 + diff));
-  });
+  utils::sortCounts(counts);
 
-  let i = match counts[0].team {
+  let mut i = match counts[0].team {
     Blank => 1,
     _ => 0
   };
   match utils::relationship(counts[i].team, counts[i+1].team) {
     utils::Neutral => {
-      current.values[y][x] = 0;
-      return;
+      if counts[i].score() == counts[i+1].score() {
+        current.values[y][x] = 0;
+        return;
+      }
     },
+    utils::Prey => {
+      let an = counts[i].score();
+      let bn = counts[i+1].score();
+      if an < bn + 3 {
+        i += 1;
+      }
+    }
     _ => {}
   };
   let count = &counts[i];
@@ -242,12 +202,12 @@ pub fn main() {
   sdl::wm::set_caption("Rust Simulator", "rust-sdl");
 
   let mut config = Config {
-    width: 400,
-    height: 400,
+    width: 800,
+    height: 800,
     theme: colors::Dark,
-    pattern: patterns::Cross,
+    pattern: patterns::Test,
     team: Red,
-    going: true
+    going: false
   };
 
   let mut rules = Rules {

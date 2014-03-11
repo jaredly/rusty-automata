@@ -1,4 +1,125 @@
 
+pub static NTEAMS: uint = 5;
+
+pub fn sortCounts(counts: &mut [Count, ..NTEAMS]) {
+  counts.sort_by(|a, b| {
+    /*
+    let rel = relationship(a.team, b.team);
+    let diff = match rel {
+      Predator => 3,
+      Prey => -3,
+      Neutral => 0
+    };
+    */
+    let bn = b.score();
+    let an = a.score();
+    return bn.cmp(&an);
+  });
+}
+
+pub fn OsortCounts(counts: &mut [Count, ..NTEAMS]) -> bool {
+  let mut i = 0;
+  // let mut tmp:~[Count] = ~[];
+
+  let mut j = 0;
+  while j < 1000 {
+    let mut moved = false;
+    for i in range(1, NTEAMS) {
+      if swap(counts[0], counts[i]) {
+        counts.swap(0, i);
+        moved = true;
+      }
+    }
+    if !moved {
+      break;
+    }
+    j += 1;
+    if j > 900 {
+      println!("Stuff {} {} {}", counts[0], counts[1], counts[2]);
+      return false;
+      // fail!("Infinite loop!");
+    }
+  }
+
+  /*
+  for i in range(0, NTEAMS) {
+    let at = 0;
+  
+  while i < NTEAMS && m < 100 {
+    let mut j = i + 1;
+    let mut moved = false;
+    while j < NTEAMS {
+      if swap(counts[i], counts[j]) {
+        counts.swap(i, j);
+        moved = true;
+        break;
+      }
+      j += 1;
+    }
+    if !moved {
+      i += 1;
+    }
+  }
+  */
+  true
+}
+
+pub fn swap(a: Count, b: Count) -> bool {
+  let rel = relationship(a.team, b.team);
+  let diff = match rel {
+    Predator => 3,
+    Prey => -3,
+    Neutral => 0
+  };
+  let bn = b.score();
+  let an = a.score();
+  (bn as i8) > (an as i8 + diff)
+}
+
+#[deriving(Show)]
+pub struct Count {
+  team: Team,
+
+  sum: u8,
+  num: u8,
+  max: u8,
+  greater: u8,
+  // corners
+  csum: u8,
+  cnum: u8,
+  cmax: u8,
+  // manhatten
+  msum: u8,
+  mnum: u8,
+  mmax: u8
+}
+
+
+impl Count {
+  pub fn new() -> Count {
+    Count {
+      team:Blank,
+
+      sum:0,
+      num:0,
+      max:0,
+      greater: 0,
+
+      csum:0,
+      cnum:0,
+      cmax:0,
+
+      msum:0,
+      mnum:0,
+      mmax:0
+    }
+  }
+  pub fn score(&self) -> u8 {
+    self.cnum + self.mnum * 2
+  }
+}
+
+#[deriving(Show)]
 pub enum Team {
   Blank = 0,
   Blue = 1,
