@@ -122,6 +122,12 @@ fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [
     Blank => 1,
     _ => 0
   };
+  let score = counts[i].score();
+  if score == counts[i+1].score() { // && score == counts[i+2].score() {
+    current.values[y][x] = 0;
+    return;
+  }
+    /*
   match utils::relationship(counts[i].team, counts[i+1].team) {
     utils::Neutral => {
       if counts[i].score() == counts[i+1].score() {
@@ -138,6 +144,7 @@ fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [
     }
     _ => {}
   };
+    */
   let count = &counts[i];
 
   if count.num > 0 {
@@ -202,8 +209,8 @@ pub fn main() {
   sdl::wm::set_caption("Rust Simulator", "rust-sdl");
 
   let mut config = Config {
-    width: 800,
-    height: 800,
+    width: 500,
+    height: 500,
     theme: colors::Dark,
     pattern: patterns::Test,
     team: Red,

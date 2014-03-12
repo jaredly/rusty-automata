@@ -6,7 +6,8 @@ pub enum Pattern {
   Cross,
   Threes,
   Separate,
-  Impasse
+  Impasse,
+  Center
 }
 
 pub fn nextPattern(now: Pattern) -> Pattern {
@@ -15,7 +16,8 @@ pub fn nextPattern(now: Pattern) -> Pattern {
     Cross => Threes,
     Threes => Separate,
     Separate => Impasse,
-    Impasse => Test
+    Impasse => Center,
+    Center => Test
   }
 }
 
@@ -55,7 +57,13 @@ pub fn prefill(pattern: Pattern, current: &mut Matrix) {
     Separate => separate(current),
     Threes => threes(current),
     Impasse => impasse(current),
-    Test => test(current)
+    Test => test(current),
+    Center => {
+      current.fill(50, 50, 10, 10, 10);
+      current.fill(40, 50, 10, 10, 20);
+      current.fill(40, 40, 10, 10, 30);
+      current.fill(50, 40, 10, 10, 40);
+    }
   }
 }
 
