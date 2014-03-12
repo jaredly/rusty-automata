@@ -3,77 +3,10 @@ pub static NTEAMS: uint = 5;
 
 pub fn sortCounts(counts: &mut [Count, ..NTEAMS]) {
   counts.sort_by(|a, b| {
-    /*
-    let rel = relationship(a.team, b.team);
-    let diff = match rel {
-      Predator => 3,
-      Prey => -3,
-      Neutral => 0
-    };
-    */
     let bn = b.score();
     let an = a.score();
     return bn.cmp(&an);
   });
-}
-
-pub fn OsortCounts(counts: &mut [Count, ..NTEAMS]) -> bool {
-  let mut i = 0;
-  // let mut tmp:~[Count] = ~[];
-
-  let mut j = 0;
-  while j < 1000 {
-    let mut moved = false;
-    for i in range(1, NTEAMS) {
-      if swap(counts[0], counts[i]) {
-        counts.swap(0, i);
-        moved = true;
-      }
-    }
-    if !moved {
-      break;
-    }
-    j += 1;
-    if j > 900 {
-      println!("Stuff {} {} {}", counts[0], counts[1], counts[2]);
-      return false;
-      // fail!("Infinite loop!");
-    }
-  }
-
-  /*
-  for i in range(0, NTEAMS) {
-    let at = 0;
-  
-  while i < NTEAMS && m < 100 {
-    let mut j = i + 1;
-    let mut moved = false;
-    while j < NTEAMS {
-      if swap(counts[i], counts[j]) {
-        counts.swap(i, j);
-        moved = true;
-        break;
-      }
-      j += 1;
-    }
-    if !moved {
-      i += 1;
-    }
-  }
-  */
-  true
-}
-
-pub fn swap(a: Count, b: Count) -> bool {
-  let rel = relationship(a.team, b.team);
-  let diff = match rel {
-    Predator => 3,
-    Prey => -3,
-    Neutral => 0
-  };
-  let bn = b.score();
-  let an = a.score();
-  (bn as i8) > (an as i8 + diff)
 }
 
 #[deriving(Show)]
@@ -126,17 +59,6 @@ pub enum Team {
   Green = 2,
   Red = 3,
   Yellow = 4
-}
-
-pub fn numTeam(val: u8) -> Team {
-  match val {
-    0 => Blank,
-    1 => Blue,
-    2 => Green,
-    3 => Red,
-    4 => Yellow,
-    _ => Blank
-  }
 }
 
 pub fn nextTeam(team: Team) -> Team {
@@ -220,6 +142,7 @@ pub fn prey(team: Team) -> Team {
   }
 }
 
+/*
 pub enum Relationship {
   Predator,
   Prey,
@@ -255,4 +178,5 @@ pub fn relationship(t1: Team, t2: Team) -> Relationship {
     }
   }
 }
+*/
 

@@ -1,4 +1,4 @@
-use sdl::video::{Color, RGB, Surface};
+use sdl::video::{Color, RGB};
 use utils;
 use utils::{Blank, Blue, Green, Red, Yellow};
 

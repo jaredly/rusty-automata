@@ -2,7 +2,7 @@ extern crate sdl;
 // extern crate sdl_ttf;
 
 use matrix::{Matrix, init};
-use sdl::video::{Color, RGB, Surface};
+use sdl::video::{RGB, Surface};
 use utils::{Blank, Red, NTEAMS, Count};
 use rules::Rules;
 
@@ -104,23 +104,11 @@ fn upOne(rules: &Rules, old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
   }
 }
 
-fn predates(one: u8, other: u8) -> bool {
-  if other == 0 {return true}
-  match one {
-    0 => false,
-    1 => other == 2,
-    2 => other == 3,
-    3 => other == 4,
-    4 => other == 1,
-    _ => false
-  }
-}
-
 fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [Count, ..NTEAMS]) {
 
   utils::sortCounts(counts);
 
-  let mut i = match counts[0].team {
+  let i = match counts[0].team {
     Blank => 1,
     _ => 0
   };
@@ -129,29 +117,11 @@ fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [
     current.values[y][x] = 0;
     return;
   }
-    /*
-  match utils::relationship(counts[i].team, counts[i+1].team) {
-    utils::Neutral => {
-      if counts[i].score() == counts[i+1].score() {
-        current.values[y][x] = 0;
-        return;
-      }
-    },
-    utils::Prey => {
-      let an = counts[i].score();
-      let bn = counts[i+1].score();
-      if an < bn + 3 {
-        i += 1;
-      }
-    }
-    _ => {}
-  };
-    */
   let count = &counts[i];
 
   if count.num > 0 {
     let nval = count.sum / count.num;
-    if nval < 2 {
+    if nval < rules.min_grow {
       current.values[y][x] = 0;
     } else {
       current.values[y][x] = utils::getPoor(count.team, nval - 1);
@@ -189,9 +159,11 @@ fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..NTEAMS], cval: 
     1
   } else if friends.num <= rules.alone {
     -1
-  } else if friends.greater >= 4 {
-  // } else if friends.num >= rules.support && (friends.mmax > cval + 1 || friends.cmax > cval + 3) {
+  } else if friends.greater >= rules.support {
     1
+  // This makes things more round...but I think less interesting
+  // } else if friends.mmax > cval + 1 {
+  //   1
   } else {
     0
   }
@@ -203,6 +175,50 @@ fn advance(rules: &Rules, old: &Matrix, current: &mut Matrix) {
       upOne(rules, old, current, x, y);
     }
   }
+}
+
+fn handleKeys(k: sdl::event::Key, config: &mut Config, current: &mut Matrix, old: &mut Matrix) -> bool {
+  match k {
+    // C: color change (mouse clicking)
+    sdl::event::CKey => {
+      config.team = utils::nextTeam(config.team)
+    },
+    // P: pause/play
+    sdl::event::PKey => {
+      config.going = !config.going
+    },
+    // T: theme change
+    sdl::event::TKey => {
+      config.theme = colors::nextTheme(config.theme);
+    },
+    // D: pattern change
+    sdl::event::DKey => {
+      config.pattern = patterns::nextPattern(config.pattern);
+      old.fill(0,0,100,100,0);
+      patterns::prefill(config.pattern, current)
+    },
+    sdl::event::SKey => {
+      return true;
+    },
+    // SPACE: restart
+    sdl::event::SpaceKey => {
+      old.fill(0,0,100,100,0);
+      patterns::prefill(config.pattern, current)
+    },
+    _ => {}
+  }
+  false
+}
+
+fn handleButtons(buttons: &mut [button::Button], thev: &sdl::event::Event, rules: &mut rules::Rules) -> bool {
+  let stop = buttons.mut_iter().any(|button| {
+    if button.event(thev) {
+      rules::ruleIt(rules, button.action, button.value as u8);
+      return true;
+    }
+    false
+  });
+  stop
 }
 
 #[main]
@@ -225,10 +241,10 @@ pub fn main() {
     support: 5,
     alone: 3,
     food: 1,
+    min_grow: 2,
     gang: false
   };
 
-  // let mut rng = rand::rng();
   let screen = initScreen(config);
   // sdl_ttf::init();
 
@@ -260,14 +276,7 @@ pub fn main() {
   'main : loop {
     'event : loop {
       let thev = sdl::event::poll_event();
-      let stop = buttons.mut_iter().any(|button| {
-        if button.event(&thev) {
-          rules::ruleIt(&mut rules, button.action, button.value as u8);
-          return true;
-        }
-        false
-      });
-      if stop {
+      if handleButtons(buttons, &thev, &mut rules) {
         break;
       }
       match thev {
@@ -277,37 +286,11 @@ pub fn main() {
                   if k == sdl::event::EscapeKey
                       => break 'main,
         sdl::event::KeyEvent(k, down, _, _) if down => {
-          match k {
-            // C: color change (mouse clicking)
-            sdl::event::CKey => {
-              config.team = utils::nextTeam(config.team)
-            },
-            // P: pause/play
-            sdl::event::PKey => {
-              config.going = !config.going
-            },
-            // T: theme change
-            sdl::event::TKey => {
-              config.theme = colors::nextTheme(config.theme);
-            },
-            // D: pattern change
-            sdl::event::DKey => {
-              config.pattern = patterns::nextPattern(config.pattern);
-              old.fill(0,0,100,100,0);
-              patterns::prefill(config.pattern, current)
-            },
-            sdl::event::SKey => {
-              third = old;
-              old = current;
-              current = third;
-              advance(&rules, old, current);
-            },
-            // SPACE: restart
-            sdl::event::SpaceKey => {
-              old.fill(0,0,100,100,0);
-              patterns::prefill(config.pattern, current)
-            },
-            _ => {}
+          if handleKeys(k, &mut config, current, old) {
+            third = old;
+            old = current;
+            current = third;
+            advance(&rules, old, current);
           }
         },
         sdl::event::MouseMotionEvent(st, x, y, _, _) => {

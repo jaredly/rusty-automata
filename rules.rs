@@ -6,6 +6,7 @@ pub struct Rules {
   alone: u8,
   food: u8,
   support: u8,
+  min_grow: u8,
   gang: bool
 }
 

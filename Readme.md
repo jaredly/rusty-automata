@@ -1,6 +1,8 @@
 # Rusty Automata
 
-This is an experiment in rust & cellular automata.
+This is an experiment in rust & cellular automata. [video](http://www.youtube.com/watch?v=lNFOnomruqk)
+
+![screenshot](screenshot-2.png)
 
 ## Requirements
 - libSDL (`yum install SDL-devel`, `apt-get install libsdl-dev`)
