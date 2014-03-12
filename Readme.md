@@ -2,6 +2,8 @@
 
 This is an experiment in rust & cellular automata.
 
+![screenshot](screenshot-2.png)
+
 ## Requirements
 - libSDL (`yum install SDL-devel`, `apt-get install libsdl-dev`)
 - the latest unstable version of rust (10-pre), from github's HEAD
