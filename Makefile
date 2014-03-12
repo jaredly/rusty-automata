@@ -1,9 +1,11 @@
 
 RUST = $(wildcard *.rs)
 
-build: ${RUST}
-	@rustc -L../rust-sdl simulate.rs
+build: ${RUST} rust-sdl
+	@rustc -L./rust-sdl simulate.rs
 
-tuned: ${RUST}
-	@rustc -L../rust-sdl simulate.rs --opt-level=3 -o tuned
+tuned: ${RUST} rust-sdl
+	@rustc -L./rust-sdl simulate.rs --opt-level=3 -o tuned
 
+rust-sdl:
+	@cd rust-sdl && rustc src/sdl/lib.rs
