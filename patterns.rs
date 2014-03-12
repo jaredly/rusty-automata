@@ -4,67 +4,64 @@ use matrix::Matrix;
 pub enum Pattern {
   Test,
   Cross,
+  Line,
   Threes,
   Separate,
   Impasse,
-  Center
+  Center,
+  Quadros,
+  Diamond,
+  Octag
 }
 
 pub fn nextPattern(now: Pattern) -> Pattern {
   match now {
     Test => Cross,
-    Cross => Threes,
+    Cross => Line,
+    Line => Threes,
     Threes => Separate,
     Separate => Impasse,
     Impasse => Center,
-    Center => Test
+    Center => Quadros,
+    Quadros => Diamond,
+    Diamond => Octag,
+    Octag => Test
   }
 }
 
+fn small_square(x: uint, y: uint, current: &mut Matrix) {
+  current.values[x + 1][y] = 10;
+  current.values[x][y] = 10;
+  current.values[x][y + 1] = 10;
+
+  current.values[x][y + 2] = 20;
+  current.values[x][y + 3] = 20;
+  current.values[x + 1][y + 3] = 20;
+
+  current.values[x + 2][y + 3] = 30;
+  current.values[x + 3][y + 3] = 30;
+  current.values[x + 3][y + 2] = 30;
+
+  current.values[x + 3][y + 1] = 40;
+  current.values[x + 3][y] = 40;
+  current.values[x + 2][y] = 40;
+}
+
+fn not_square(x: uint, y: uint, current: &mut Matrix) {
+  current.values[x][y + 2] = 10;
+  current.values[x + 1][y + 3] = 10;
+  current.values[x + 2][y + 3] = 20;
+  current.values[x + 3][y + 2] = 20;
+  current.values[x + 3][y + 1] = 30;
+  current.values[x + 2][y] = 30;
+  current.values[x + 1][y] = 40;
+  current.values[x][y + 1] = 40;
+}
+
 pub fn test(current: &mut Matrix) {
-  current.values[21][20] = 10;
-  current.values[20][20] = 10;
-  current.values[20][21] = 10;
 
-  current.values[20][22] = 20;
-  current.values[20][23] = 20;
-  current.values[21][23] = 20;
-
-  current.values[22][23] = 30;
-  current.values[23][23] = 30;
-  current.values[23][22] = 30;
-
-  current.values[23][21] = 40;
-  current.values[23][20] = 40;
-  current.values[22][20] = 40;
-
-
-  current.values[77][76] = 10;
-  current.values[76][76] = 10;
-  current.values[76][77] = 10;
-
-  current.values[76][78] = 20;
-  current.values[76][79] = 20;
-  current.values[77][79] = 20;
-
-  current.values[78][79] = 30;
-  current.values[79][79] = 30;
-  current.values[79][78] = 30;
-
-  current.values[79][77] = 40;
-  current.values[79][76] = 40;
-  current.values[78][76] = 40;
-
-/*
-  current.values[70][70] = 10;
-  current.values[71][71] = 10;
-  current.values[72][71] = 20;
-  current.values[73][70] = 20;
-  current.values[73][69] = 30;
-  current.values[72][68] = 30;
-  current.values[71][68] = 40;
-  current.values[70][69] = 40;
-*/
+  small_square(20, 20, current);
+  small_square(current.width - 24, current.height - 24, current);
 
 }
 
@@ -72,6 +69,7 @@ pub fn prefill(pattern: Pattern, current: &mut Matrix) {
   current.fill(0, 0, current.width as int, current.height as int, 0);
   match pattern {
     Cross => cross(current),
+    Line => line(current),
     Separate => separate(current),
     Threes => threes(current),
     Impasse => impasse(current),
@@ -83,6 +81,29 @@ pub fn prefill(pattern: Pattern, current: &mut Matrix) {
       current.fill(cx-10, cy, 10, 10, 20);
       current.fill(cx-10, cy-10, 10, 10, 30);
       current.fill(cx, cy-10, 10, 10, 40);
+    },
+    Quadros => {
+      not_square(20, 20, current);
+      not_square(current.width - 24, 20, current);
+      not_square(current.width - 24, current.height - 24, current);
+      not_square(20, current.height - 24, current);
+    },
+    Diamond => {
+      not_square(current.width/2 - 2, 20, current);
+      not_square(current.width/2 - 2, current.height - 24, current);
+      not_square(20,                 current.height/2 - 2, current);
+      not_square(current.width - 24, current.height/2 - 2, current);
+    },
+    Octag => {
+      not_square(current.width/2 - 2, 20, current);
+      not_square(current.width/2 - 2, current.height - 24, current);
+      not_square(20,                 current.height/2 - 2, current);
+      not_square(current.width - 24, current.height/2 - 2, current);
+
+      not_square(20, 20, current);
+      not_square(current.width - 24, 20, current);
+      not_square(current.width - 24, current.height - 24, current);
+      not_square(20, current.height - 24, current);
     }
   }
 }
@@ -92,12 +113,25 @@ fn impasse(current: &mut Matrix) {
   current.fill(16, 10, 5, 20, 20);
 }
 
+pub fn line(current: &mut Matrix) {
+  let xs = (current.width/20) as int;
+  let ys = (current.height/20) as int;
+  for i in range(0, 20) {
+    current.fill(i * xs, i * ys, xs, ys, ((i % 4)*10 + 10) as u8)
+  }
+}
+
 pub fn cross(current: &mut Matrix) {
   let xs = (current.width/20) as int;
   let ys = (current.height/20) as int;
   for i in range(0, 20) {
     current.fill(i * xs, i * ys, xs, ys, ((i % 4)*10 + 10) as u8)
   }
+  for i in range(0, 20) {
+    current.fill(i * xs, current.height as int - 10 - i * ys, xs, ys, ((i % 4)*10 + 10) as u8)
+  }
+  current.fill(current.width as int/2 - 10, current.height as int/2 - 10, 20, 20, 0);
+  small_square(current.width/2 - 2, current.height/2 - 2, current);
 }
 
 pub fn threes(current: &mut Matrix) {

@@ -4,20 +4,23 @@ use utils::{Blank, Blue, Green, Red, Yellow};
 
 pub enum Theme {
   Light,
-  Dark
+  Dark,
+  Orange
 }
 
 pub fn colorize(theme: Theme, val: u8) -> Color {
   match theme {
     Light => light(val),
-    Dark  => dark(val)
+    Dark  => dark(val),
+    Orange => orange(val)
   }
 }
 
 pub fn nextTheme(theme: Theme) -> Theme {
   match theme {
     Light => Dark,
-    Dark => Light
+    Dark => Orange,
+    Orange => Light
   }
 }
 
@@ -50,7 +53,26 @@ fn dark(val: u8) -> Color {
     },
     Red   => {
       let v = val - 20;
-      RGB(v*25, 0, 0)
+      RGB(v*10, 0, v*13)
+    },
+    Yellow => {
+      let v = val - 30;
+      RGB(v*25, v*25, 0)
+    }
+  }
+}
+
+fn orange(val: u8) -> Color {
+  match utils::getTeam(val) {
+    Blank => RGB(0,0,0),
+    Blue  => RGB(val*15, val*12, 0),
+    Green => {
+      let v = val - 10;
+      RGB(v*25, v*9, 0)
+    },
+    Red   => {
+      let v = val - 20;
+      RGB(v*15, v*2, 0)
     },
     Yellow => {
       let v = val - 30;

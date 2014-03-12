@@ -1,4 +1,6 @@
 
+RUST = $(wildcard *.rs)
+
 build: ${RUST}
 	@rustc -L./rust-sdl_ttf -L./rust-sdl simulate.rs
 
