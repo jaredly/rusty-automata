@@ -211,8 +211,8 @@ pub fn main() {
   sdl::wm::set_caption("Rust Simulator", "rust-sdl");
 
   let mut config = Config {
-    width: 500,
-    height: 500,
+    width: 600,
+    height: 600,
     theme: colors::Dark,
     pattern: patterns::Test,
     team: Red,
@@ -232,7 +232,7 @@ pub fn main() {
   let screen = initScreen(config);
   // sdl_ttf::init();
 
-  let (mut one, mut two) = init(100, 100);
+  let (mut one, mut two) = init(200, 200);
   let mut old = &mut one;
   let mut current = &mut two;
   let mut third:&mut Matrix;

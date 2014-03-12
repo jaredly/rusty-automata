@@ -77,10 +77,12 @@ pub fn prefill(pattern: Pattern, current: &mut Matrix) {
     Impasse => impasse(current),
     Test => test(current),
     Center => {
-      current.fill(50, 50, 10, 10, 10);
-      current.fill(40, 50, 10, 10, 20);
-      current.fill(40, 40, 10, 10, 30);
-      current.fill(50, 40, 10, 10, 40);
+      let cx = current.width as int / 2;
+      let cy = current.height as int / 2;
+      current.fill(cx, cy, 10, 10, 10);
+      current.fill(cx-10, cy, 10, 10, 20);
+      current.fill(cx-10, cy-10, 10, 10, 30);
+      current.fill(cx, cy-10, 10, 10, 40);
     }
   }
 }
