@@ -65,14 +65,14 @@ fn dark(val: u8) -> Color {
 fn orange(val: u8) -> Color {
   match utils::getTeam(val) {
     Blank => RGB(0,0,0),
-    Blue  => RGB(val*15, val*12, 0),
+    Blue  => RGB(val*13, val*8, 0),
     Green => {
       let v = val - 10;
       RGB(v*25, v*9, 0)
     },
     Red   => {
       let v = val - 20;
-      RGB(v*15, v*2, 0)
+      RGB(v*13, v*1, 0)
     },
     Yellow => {
       let v = val - 30;
