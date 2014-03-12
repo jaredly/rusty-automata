@@ -39,6 +39,23 @@ pub fn test(current: &mut Matrix) {
   current.values[22][20] = 40;
 
 
+  current.values[77][76] = 10;
+  current.values[76][76] = 10;
+  current.values[76][77] = 10;
+
+  current.values[76][78] = 20;
+  current.values[76][79] = 20;
+  current.values[77][79] = 20;
+
+  current.values[78][79] = 30;
+  current.values[79][79] = 30;
+  current.values[79][78] = 30;
+
+  current.values[79][77] = 40;
+  current.values[79][76] = 40;
+  current.values[78][76] = 40;
+
+/*
   current.values[70][70] = 10;
   current.values[71][71] = 10;
   current.values[72][71] = 20;
@@ -47,6 +64,7 @@ pub fn test(current: &mut Matrix) {
   current.values[72][68] = 30;
   current.values[71][68] = 40;
   current.values[70][69] = 40;
+*/
 
 }
 

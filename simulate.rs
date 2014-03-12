@@ -1,4 +1,6 @@
 extern crate sdl;
+// extern crate sdl_ttf;
+
 use matrix::{Matrix, init};
 use sdl::video::{Color, RGB, Surface};
 use utils::{Blank, Red, NTEAMS, Count};
@@ -228,6 +230,7 @@ pub fn main() {
 
   // let mut rng = rand::rng();
   let screen = initScreen(config);
+  // sdl_ttf::init();
 
   let (mut one, mut two) = init(100, 100);
   let mut old = &mut one;
@@ -246,6 +249,12 @@ pub fn main() {
     action: rules::Crowd
   });
 
+  /*
+  let font = match sdl_ttf::open_font("./Gafata-Regular.ttf", 14) {
+    Ok(loaded) => loaded,
+    _ => fail!("Couldn't load the font")
+  };
+  */
   patterns::prefill(config.pattern, current);
 
   'main : loop {
@@ -316,7 +325,14 @@ pub fn main() {
       advance(&rules, old, current);
     }
     draw(&config, screen, current);
-    for _ in buttons.iter().map(|b| b.draw(screen)) { }
+    // for _ in buttons.iter().map(|b| b.draw(screen)) { }
+    /*
+    let text = match sdl_ttf::render_solid(font, "awesome", RGB(255, 0, 255)) {
+      Ok(text) => text,
+      _ => fail!("Couldn't draw string")
+    };
+    screen.blit(text);
+    */
 
     screen.flip();
   }
