@@ -104,18 +104,6 @@ fn upOne(rules: &Rules, old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
   }
 }
 
-fn predates(one: u8, other: u8) -> bool {
-  if other == 0 {return true}
-  match one {
-    0 => false,
-    1 => other == 2,
-    2 => other == 3,
-    3 => other == 4,
-    4 => other == 1,
-    _ => false
-  }
-}
-
 fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [Count, ..NTEAMS]) {
 
   utils::sortCounts(counts);
@@ -129,29 +117,11 @@ fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [
     current.values[y][x] = 0;
     return;
   }
-    /*
-  match utils::relationship(counts[i].team, counts[i+1].team) {
-    utils::Neutral => {
-      if counts[i].score() == counts[i+1].score() {
-        current.values[y][x] = 0;
-        return;
-      }
-    },
-    utils::Prey => {
-      let an = counts[i].score();
-      let bn = counts[i+1].score();
-      if an < bn + 3 {
-        i += 1;
-      }
-    }
-    _ => {}
-  };
-    */
   let count = &counts[i];
 
   if count.num > 0 {
     let nval = count.sum / count.num;
-    if nval < 2 {
+    if nval < rules.min_grow {
       current.values[y][x] = 0;
     } else {
       current.values[y][x] = utils::getPoor(count.team, nval - 1);
@@ -189,9 +159,10 @@ fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..NTEAMS], cval: 
     1
   } else if friends.num <= rules.alone {
     -1
-  } else if friends.greater >= 4 {
-  // } else if friends.num >= rules.support && (friends.mmax > cval + 1 || friends.cmax > cval + 3) {
+  } else if friends.greater >= 5 {
     1
+  // } else if friends.mmax > cval + 1 {
+    // 1
   } else {
     0
   }
@@ -225,6 +196,7 @@ pub fn main() {
     support: 5,
     alone: 3,
     food: 1,
+    min_grow: 2,
     gang: false
   };
 
