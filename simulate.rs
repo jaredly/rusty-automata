@@ -61,12 +61,12 @@ fn handleButtons(buttons: &mut [button::Button], thev: &sdl::event::Event, rules
   stop
 }
 
-pub fn run(config: &mut Config, rules: &mut Rules, buttons: &mut [button::Button]) {
+pub fn run(width: uint, height: uint, config: &mut Config, rules: &mut Rules, buttons: &mut [button::Button]) {
   sdl::init([sdl::InitVideo]);
   sdl::wm::set_caption("Rust Simulator", "rust-sdl");
 
   let screen = config.initScreen();
-  let mut data = Super::init(200, 200);
+  let mut data = Super::init(width, height);
   // sdl_ttf::init();
 
 
@@ -158,6 +158,6 @@ pub fn main() {
     action: rules::Crowd
   });
 
-  run(&mut config, &mut rules, buttons);
+  run(100, 100, &mut config, &mut rules, buttons);
 }
 
