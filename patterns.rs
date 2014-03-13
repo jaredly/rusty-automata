@@ -70,7 +70,7 @@ pub fn test(current: &mut Matrix) {
 }
 
 pub fn prefill(pattern: Pattern, current: &mut Matrix) {
-  current.fill(0, 0, current.width as int, current.height as int, 0);
+  current.fill(0, 0, current.width, current.height, 0);
   match pattern {
     Cross => cross(current),
     Line => line(current),
@@ -79,8 +79,8 @@ pub fn prefill(pattern: Pattern, current: &mut Matrix) {
     Impasse => impasse(current),
     Test => test(current),
     Center => {
-      let cx = current.width as int / 2;
-      let cy = current.height as int / 2;
+      let cx = current.width/ 2;
+      let cy = current.height/ 2;
       current.fill(cx, cy, 10, 10, 10);
       current.fill(cx-10, cy, 10, 10, 20);
       current.fill(cx-10, cy-10, 10, 10, 30);
@@ -127,23 +127,23 @@ fn impasse(current: &mut Matrix) {
 }
 
 pub fn line(current: &mut Matrix) {
-  let xs = (current.width/20) as int;
-  let ys = (current.height/20) as int;
-  for i in range(0, 20) {
+  let xs = current.width/20;
+  let ys = current.height/20;
+  for i in range(0u, 20) {
     current.fill(i * xs, i * ys, xs, ys, ((i % 4)*10 + 10) as u8)
   }
 }
 
 pub fn cross(current: &mut Matrix) {
-  let xs = (current.width/20) as int;
-  let ys = (current.height/20) as int;
-  for i in range(0, 20) {
+  let xs = current.width/20;
+  let ys = current.height/20;
+  for i in range(0u, 20) {
     current.fill(i * xs, i * ys, xs, ys, ((i % 4)*10 + 10) as u8)
   }
-  for i in range(0, 20) {
-    current.fill(i * xs, current.height as int - 10 - i * ys, xs, ys, ((i % 4)*10 + 10) as u8)
+  for i in range(0u, 20) {
+    current.fill(i * xs, current.height- 10 - i * ys, xs, ys, ((i % 4)*10 + 10) as u8)
   }
-  current.fill(current.width as int/2 - 10, current.height as int/2 - 10, 20, 20, 0);
+  current.fill(current.width/2 - 10, current.height/2 - 10, 20, 20, 0);
   small_square(current.width/2 - 2, current.height/2 - 2, current);
 }
 

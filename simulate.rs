@@ -1,183 +1,25 @@
 extern crate sdl;
 // extern crate sdl_ttf;
 
-use matrix::{Matrix, init};
+use matrix::{Matrix, init, Super};
 use sdl::video::{RGB, Surface};
 use utils::{Blank, Red, NTEAMS, Count};
 use rules::Rules;
+use config::Config;
 
 // use std::rand::Rng;
 // use std::rand;
 
+mod automate;
 mod button;
 mod utils;
 mod patterns;
 mod colors;
 mod matrix;
 mod rules;
+mod config;
 
-struct Config {
-  going: bool,
-  width: uint,
-  height: uint,
-  theme: colors::Theme,
-  pattern: patterns::Pattern,
-  team: utils::Team
-}
-
-fn draw(config: &Config, screen: &sdl::video::Surface, mx: &Matrix) {
-  let xscale = config.width as i16 / mx.width as i16;
-  let yscale = config.height as i16/ mx.height as i16;
-  for y in range(0u, mx.height) {
-    for x in range(0u, mx.width) {
-      screen.fill_rect(Some(sdl::Rect {
-        x: (x as i16) * xscale,
-        y: (y as i16) * yscale,
-        w: xscale as u16,
-        h: yscale as u16
-      }), colors::colorize(config.theme, mx.values[y][x]));
-    }
-  }
-}
-
-fn initScreen(config: Config) -> ~Surface {
-  match sdl::video::set_video_mode(
-          config.width as int,
-          config.height as int,
-          32,
-          [sdl::video::HWSurface],
-          [sdl::video::DoubleBuf]) {
-    Ok(screen) => screen,
-    Err(err) => fail!("failed to set video mode: {}", err)
-  }
-}
-
-
-fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..NTEAMS] {
-  let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
-  let mut counts:[Count, ..NTEAMS] = [Count::new(), ..NTEAMS];
-  for i in range(0, 8) {
-    let (dx, dy) = moves[i];
-    if dx + x < 0 ||
-        dy + y < 0 ||
-        dx + x >= old.width ||
-        dy + y >= old.height {
-      continue;
-    }
-    let (oteam, oval) = utils::getRich(old.values[dy+y][dx+x]);
-    let count = &mut counts[oteam as int];
-    count.team = oteam;
-    count.sum += oval;
-    count.num += 1;
-    if oval > count.max {
-      count.max = oval;
-    }
-    if oval > cval {
-      count.greater += 1;
-    }
-    match dx + dy {
-      1 | -1 => { // straight
-        count.msum += oval;
-        count.mnum += 1;
-        if oval > count.mmax {
-          count.mmax = oval;
-        }
-      },
-      _ => { // diagonal
-        count.csum += oval;
-        count.cnum += 1;
-        if oval > count.cmax {
-          count.cmax = oval;
-        }
-      }
-    };
-  }
-  counts
-}
-
-fn upOne(rules: &Rules, old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
-  let (team, cval) = utils::getRich(old.values[y][x]);
-  let mut counts = getCounts(old, x, y, cval);
-  match team {
-    Blank => upBlank(rules, current, x, y, &mut counts),
-    _ => upTeam(current, x, y, teamDiff(rules, team, &counts, cval), &counts, team, cval)
-  }
-}
-
-fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [Count, ..NTEAMS]) {
-
-  utils::sortCounts(counts);
-
-  let i = match counts[0].team {
-    Blank => 1,
-    _ => 0
-  };
-  let score = counts[i].score();
-  if score == counts[i+1].score() { // && score == counts[i+2].score() {
-    current.values[y][x] = 0;
-    return;
-  }
-  let count = &counts[i];
-
-  if count.num > 0 {
-    let nval = count.sum / count.num;
-    if nval < rules.min_grow {
-      current.values[y][x] = 0;
-    } else {
-      current.values[y][x] = utils::getPoor(count.team, nval - 1);
-    }
-  } else {
-    current.values[y][x] = 0;
-  }
-}
-
-fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..NTEAMS], team: utils::Team, cval: u8) {
-  let now = cval as i8 + diff;
-  current.values[y][x] = if now <= 0 {
-    if counts[utils::predator(team) as int].num > 0 && counts[utils::predator(team) as int].max > 1 {
-      utils::getPoor(utils::predator(team), 1)
-    } else {
-      0
-    }
-  } else if now > 10 {
-    utils::getPoor(team, 10)
-  } else {
-    utils::getPoor(team, now as u8)
-  };
-}
-
-fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..NTEAMS], cval: u8) -> i8 {
-  // let empty = counts[Blank as int] as i8;
-  let food = counts[utils::prey(team) as int];
-  let danger = counts[utils::predator(team) as int];
-  let friends = counts[team as int];
-  if (rules.gang && danger.num > friends.num) || danger.num >= rules.danger {
-    -1
-  } else if friends.num >= rules.crowd {
-    -1
-  } else if food.num >= rules.food {
-    1
-  } else if friends.num <= rules.alone {
-    -1
-  } else if friends.greater >= rules.support {
-    1
-  // This makes things more round...but I think less interesting
-  // } else if friends.mmax > cval + 1 {
-  //   1
-  } else {
-    0
-  }
-}
-
-fn advance(rules: &Rules, old: &Matrix, current: &mut Matrix) {
-  for x in range(0u, old.width) {
-    for y in range(0u, old.height) {
-      upOne(rules, old, current, x, y);
-    }
-  }
-}
-
-fn handleKeys(k: sdl::event::Key, config: &mut Config, current: &mut Matrix, old: &mut Matrix) -> bool {
+fn handleKeys(k: sdl::event::Key, config: &mut Config, data: &mut Super) -> bool {
   match k {
     // C: color change (mouse clicking)
     sdl::event::CKey => {
@@ -194,16 +36,14 @@ fn handleKeys(k: sdl::event::Key, config: &mut Config, current: &mut Matrix, old
     // D: pattern change
     sdl::event::DKey => {
       config.pattern = patterns::nextPattern(config.pattern);
-      old.fill(0,0,100,100,0);
-      patterns::prefill(config.pattern, current)
+      data.pattern(config.pattern);
     },
     sdl::event::SKey => {
       return true;
     },
     // SPACE: restart
     sdl::event::SpaceKey => {
-      old.fill(0,0,100,100,0);
-      patterns::prefill(config.pattern, current)
+      data.pattern(config.pattern);
     },
     _ => {}
   }
@@ -221,11 +61,72 @@ fn handleButtons(buttons: &mut [button::Button], thev: &sdl::event::Event, rules
   stop
 }
 
-#[main]
-pub fn main() {
+pub fn run(config: &mut Config, rules: &mut Rules, buttons: &mut [button::Button]) {
   sdl::init([sdl::InitVideo]);
   sdl::wm::set_caption("Rust Simulator", "rust-sdl");
 
+  let screen = config.initScreen();
+  let mut data = Super::init(200, 200);
+  // sdl_ttf::init();
+
+
+  /*
+  let font = match sdl_ttf::open_font("./Gafata-Regular.ttf", 14) {
+    Ok(loaded) => loaded,
+    _ => fail!("Couldn't load the font")
+  };
+  */
+  patterns::prefill(config.pattern, data.current());
+
+  'main : loop {
+    'event : loop {
+      let thev = sdl::event::poll_event();
+      if handleButtons(buttons, &thev, rules) {
+        break;
+      }
+      match thev {
+        sdl::event::QuitEvent => break 'main,
+        sdl::event::NoEvent => break 'event,
+        sdl::event::KeyEvent(k, _, _, _)
+                  if k == sdl::event::EscapeKey
+                      => break 'main,
+        sdl::event::KeyEvent(k, down, _, _) if down => {
+          if handleKeys(k, config, &mut data) {
+            data.flip();
+            data.advance(rules);
+          }
+        },
+        sdl::event::MouseMotionEvent(st, x, y, _, _) => {
+          if st.len() > 0 {
+            data.setPoint(y as uint * data.height / config.height, x as uint * data.width / config.width, utils::getPoor(config.team, 10));
+          }
+        },
+        _ => {}
+      }
+    }
+    if config.going {
+      data.flip();
+      data.advance(rules);
+    }
+    data.draw(config, screen);
+    // for _ in buttons.iter().map(|b| b.draw(screen)) { }
+    /*
+    let text = match sdl_ttf::render_solid(font, "awesome", RGB(255, 0, 255)) {
+      Ok(text) => text,
+      _ => fail!("Couldn't draw string")
+    };
+    screen.blit(text);
+    */
+
+    screen.flip();
+  }
+
+  sdl::quit();
+
+}
+
+#[main]
+pub fn main() {
   let mut config = Config {
     width: 600,
     height: 600,
@@ -245,14 +146,6 @@ pub fn main() {
     gang: false
   };
 
-  let screen = initScreen(config);
-  // sdl_ttf::init();
-
-  let (mut one, mut two) = init(200, 200);
-  let mut old = &mut one;
-  let mut current = &mut two;
-  let mut third:&mut Matrix;
-
   let mut buttons: ~[button::Button] = ~[];
   buttons.push(button::Button {
     x: 10,
@@ -265,61 +158,6 @@ pub fn main() {
     action: rules::Crowd
   });
 
-  /*
-  let font = match sdl_ttf::open_font("./Gafata-Regular.ttf", 14) {
-    Ok(loaded) => loaded,
-    _ => fail!("Couldn't load the font")
-  };
-  */
-  patterns::prefill(config.pattern, current);
-
-  'main : loop {
-    'event : loop {
-      let thev = sdl::event::poll_event();
-      if handleButtons(buttons, &thev, &mut rules) {
-        break;
-      }
-      match thev {
-        sdl::event::QuitEvent => break 'main,
-        sdl::event::NoEvent => break 'event,
-        sdl::event::KeyEvent(k, _, _, _)
-                  if k == sdl::event::EscapeKey
-                      => break 'main,
-        sdl::event::KeyEvent(k, down, _, _) if down => {
-          if handleKeys(k, &mut config, current, old) {
-            third = old;
-            old = current;
-            current = third;
-            advance(&rules, old, current);
-          }
-        },
-        sdl::event::MouseMotionEvent(st, x, y, _, _) => {
-          if st.len() > 0 {
-            current.values[y as uint * current.height / config.height][x as uint * current.width / config.width] = utils::getPoor(config.team, 10);
-          }
-        },
-        _ => {}
-      }
-    }
-    if config.going {
-      third = old;
-      old = current;
-      current = third;
-      advance(&rules, old, current);
-    }
-    draw(&config, screen, current);
-    // for _ in buttons.iter().map(|b| b.draw(screen)) { }
-    /*
-    let text = match sdl_ttf::render_solid(font, "awesome", RGB(255, 0, 255)) {
-      Ok(text) => text,
-      _ => fail!("Couldn't draw string")
-    };
-    screen.blit(text);
-    */
-
-    screen.flip();
-  }
-
-  sdl::quit();
+  run(&mut config, &mut rules, buttons);
 }
 
