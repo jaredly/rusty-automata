@@ -12,7 +12,8 @@ pub enum Pattern {
   Quadros,
   Diamond,
   Octag,
-  Uneven
+  Uneven,
+  Morven
 }
 
 pub fn nextPattern(now: Pattern) -> Pattern {
@@ -27,7 +28,8 @@ pub fn nextPattern(now: Pattern) -> Pattern {
     Quadros => Diamond,
     Diamond => Octag,
     Octag => Uneven,
-    Uneven => Octag
+    Uneven => Morven,
+    Morven => Test
   }
 }
 
@@ -109,7 +111,12 @@ pub fn prefill(pattern: Pattern, current: &mut Matrix) {
     },
     Uneven => {
       not_square(20, 20, current);
-      not_square(current.width/2 - 2, current.height/2 - 2, current);
+      not_square(76, 76, current);
+      // not_square(current.width/2 - 20, current.height/2 - 20, current);
+    },
+    Morven => {
+      not_square(20, 20, current);
+      not_square(76, 70, current);
     }
   }
 }
