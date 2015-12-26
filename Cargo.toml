@@ -1,0 +1,10 @@
+[package]
+name = "Rusty Automata"
+version = "1.0.0"
+authors = ["Jared Forsyth <jared@jaredforsyth.com>"]
+
+[dependencies]
+sdl = "0.3.6"
+
+[[bin]]
+name = "simulate"

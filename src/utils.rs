@@ -1,7 +1,7 @@
 
-pub static NTEAMS: uint = 5;
+pub static NTEAMS: usize = 5;
 
-pub fn sortCounts(counts: &mut [Count, ..NTEAMS]) {
+pub fn sortCounts(counts: &mut [Count; 5]) {
   counts.sort_by(|a, b| {
     let bn = b.score();
     let an = a.score();
@@ -9,29 +9,29 @@ pub fn sortCounts(counts: &mut [Count, ..NTEAMS]) {
   });
 }
 
-#[deriving(Show)]
+#[derive(Debug, Clone, Copy)]
 pub struct Count {
-  team: Team,
+  pub team: Team,
 
-  sum: u8,
-  num: u8,
-  max: u8,
-  greater: u8,
+  pub sum: u8,
+  pub num: u8,
+  pub max: u8,
+  pub greater: u8,
   // corners
-  csum: u8,
-  cnum: u8,
-  cmax: u8,
+  pub csum: u8,
+  pub cnum: u8,
+  pub cmax: u8,
   // manhatten
-  msum: u8,
-  mnum: u8,
-  mmax: u8
+  pub msum: u8,
+  pub mnum: u8,
+  pub mmax: u8
 }
 
 
 impl Count {
   pub fn new() -> Count {
     Count {
-      team:Blank,
+      team:Team::Blank,
 
       sum:0,
       num:0,
@@ -52,7 +52,7 @@ impl Count {
   }
 }
 
-#[deriving(Show)]
+#[derive(Debug, Clone, Copy)]
 pub enum Team {
   Blank = 0,
   Blue = 1,
@@ -63,23 +63,23 @@ pub enum Team {
 
 pub fn nextTeam(team: Team) -> Team {
   match team {
-    Blue => Green,
-    Green => Red,
-    Red => Yellow,
-    Yellow => Blue,
-    Blank => Red
+    Team::Blue => Team::Green,
+    Team::Green => Team::Red,
+    Team::Red => Team::Yellow,
+    Team::Yellow => Team::Blue,
+    Team::Blank => Team::Red
   }
 }
 
 pub fn getRich(val: u8) -> (Team, u8) {
   match val {
-     0     => (Blank, 0),
-     1..10 => (Blue, val),
-    11..20 => (Green, val - 10),
-    21..30 => (Red, val - 20),
-    31..40 => (Yellow, val - 30),
+     0     => (Team::Blank, 0),
+     1...10 => (Team::Blue, val),
+    11...20 => (Team::Green, val - 10),
+    21...30 => (Team::Red, val - 20),
+    31...40 => (Team::Yellow, val - 30),
 
-    _      => (Blank, 0)
+    _      => (Team::Blank, 0)
   }
 }
 
@@ -88,31 +88,31 @@ pub fn getPoor(team: Team, mut val: u8) -> u8 {
     val = 10;
   }
   match team {
-    Blank => 0,
-    Blue => val,
-    Green => val + 10,
-    Red => val + 20,
-    Yellow => val + 30
+    Team::Blank => 0,
+    Team::Blue => val,
+    Team::Green => val + 10,
+    Team::Red => val + 20,
+    Team::Yellow => val + 30
   }
 }
 
 pub fn getTeam(val: u8) -> Team {
   match val {
-     0     => Blank,
-     1..10 => Blue,
-    11..20 => Green,
-    21..30 => Red,
-    31..40 => Yellow,
+     0     => Team::Blank,
+     1...10 => Team::Blue,
+    11...20 => Team::Green,
+    21...30 => Team::Red,
+    31...40 => Team::Yellow,
 
-    _      => Blank
+    _      => Team::Blank
   }
 }
 
-pub fn maketrix(width: uint, height: uint) -> ~[~[u8]] {
-  let mut matrix: ~[~[u8]] = ~[];
-  for _ in range(0, height) {
-    let mut sub: ~[u8] = ~[];
-    for _ in range(0, width) {
+pub fn maketrix(width: usize, height: usize) -> Vec<Vec<u8>> {
+  let mut matrix: Vec<Vec<u8>> = vec![];
+  for _ in 0..height {
+    let mut sub: Vec<u8> = vec![];
+    for _ in 0..width {
       sub.push(0);
     }
     matrix.push(sub)
@@ -123,22 +123,22 @@ pub fn maketrix(width: uint, height: uint) -> ~[~[u8]] {
 // get the predator team of the provided team
 pub fn predator(team: Team) -> Team {
   match team {
-    Blank => Blank,
-    Blue => Yellow,
-    Green => Blue,
-    Red => Green,
-    Yellow => Red
+    Team::Blank => Team::Blank,
+    Team::Blue => Team::Yellow,
+    Team::Green => Team::Blue,
+    Team::Red => Team::Green,
+    Team::Yellow => Team::Red
   }
 }
 
 // get the prey team of the given team
 pub fn prey(team: Team) -> Team {
   match team {
-    Blank => Blank,
-    Blue => Green,
-    Green => Red,
-    Red => Yellow,
-    Yellow => Blue
+    Team::Blank => Team::Blank,
+    Team::Blue => Team::Green,
+    Team::Green => Team::Red,
+    Team::Red => Team::Yellow,
+    Team::Yellow => Team::Blue
   }
 }
 

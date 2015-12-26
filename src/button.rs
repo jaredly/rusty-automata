@@ -1,22 +1,22 @@
 
 use rules::RuleKey;
 use sdl::video::{Color, RGB, Surface};
-use sdl::event::{MouseButtonEvent, LeftMouse, Event};
+use sdl::event::{Event, Mouse};
 use sdl;
 
 pub struct Button {
-  x: uint,
-  y: uint,
-	width: uint,
-	height: uint,
-  clicked: bool,
-	color: Color,
-  value: int,
-  action: RuleKey
+  pub x: usize,
+  pub y: usize,
+  pub width: usize,
+  pub height: usize,
+  pub clicked: bool,
+  pub color: Color,
+  pub value: isize,
+  pub action: RuleKey
 }
 
 impl Button {
-  fn hit(&self, x: uint, y:uint) -> bool {
+  fn hit(&self, x: usize, y:usize) -> bool {
     return x > self.x &&
            y > self.y &&
            x < self.x + self.width &&
@@ -28,7 +28,7 @@ impl Button {
       self.clicked = true;
       return;
     }
-    self.value += if (x as uint) < self.x + self.width/2 {
+    self.value += if (x as usize) < self.x + self.width/2 {
       1
     } else {
       -1
@@ -40,9 +40,9 @@ impl Button {
 
   pub fn event(&mut self, event: &Event) -> bool {
     match event {
-      &MouseButtonEvent(which, down, x, y) => match which {
-        LeftMouse => {
-          if !self.hit(x as uint, y as uint) {
+      &Event::MouseButton(which, down, x, y) => match which {
+        Mouse::Left => {
+          if !self.hit(x as usize, y as usize) {
             return false;
           }
           self.click(down, x, y);

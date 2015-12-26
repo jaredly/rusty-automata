@@ -1,9 +1,9 @@
+#![feature(augmented_assignments)]
 extern crate sdl;
 // extern crate sdl_ttf;
-
 use matrix::{Matrix, init};
 use sdl::video::{RGB, Surface};
-use utils::{Blank, Red, NTEAMS, Count};
+use utils::{Team, NTEAMS, Count};
 use rules::Rules;
 
 // use std::rand::Rng;
@@ -18,8 +18,8 @@ mod rules;
 
 struct Config {
   going: bool,
-  width: uint,
-  height: uint,
+  width: usize,
+  height: usize,
   theme: colors::Theme,
   pattern: patterns::Pattern,
   team: utils::Team
@@ -28,35 +28,36 @@ struct Config {
 fn draw(config: &Config, screen: &sdl::video::Surface, mx: &Matrix) {
   let xscale = config.width as i16 / mx.width as i16;
   let yscale = config.height as i16/ mx.height as i16;
-  for y in range(0u, mx.height) {
-    for x in range(0u, mx.width) {
+  let ref theme = config.theme;
+  for y in 0usize..mx.height {
+    for x in 0usize..mx.width {
       screen.fill_rect(Some(sdl::Rect {
         x: (x as i16) * xscale,
         y: (y as i16) * yscale,
         w: xscale as u16,
         h: yscale as u16
-      }), colors::colorize(config.theme, mx.values[y][x]));
+      }), colors::colorize(theme, mx.values[y][x]));
     }
   }
 }
 
-fn initScreen(config: Config) -> ~Surface {
+fn initScreen(config: Config) -> Surface {
   match sdl::video::set_video_mode(
-          config.width as int,
-          config.height as int,
+          config.width as isize,
+          config.height as isize,
           32,
-          [sdl::video::HWSurface],
-          [sdl::video::DoubleBuf]) {
+          &[sdl::video::SurfaceFlag::HWSurface],
+          &[sdl::video::VideoFlag::DoubleBuf]) {
     Ok(screen) => screen,
-    Err(err) => fail!("failed to set video mode: {}", err)
+    Err(err) => panic!("failed to set video mode: {}", err)
   }
 }
 
 
-fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..NTEAMS] {
+fn getCounts(old: &Matrix, x: usize, y: usize, cval: u8) -> [Count; 5] {
   let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
-  let mut counts:[Count, ..NTEAMS] = [Count::new(), ..NTEAMS];
-  for i in range(0, 8) {
+  let mut counts:[Count; 5] = [Count::new(); 5];
+  for i in 0..8 {
     let (dx, dy) = moves[i];
     if dx + x < 0 ||
         dy + y < 0 ||
@@ -65,7 +66,7 @@ fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..NTEAMS] {
       continue;
     }
     let (oteam, oval) = utils::getRich(old.values[dy+y][dx+x]);
-    let count = &mut counts[oteam as int];
+    let count = &mut counts[oteam as usize];
     count.team = oteam;
     count.sum += oval;
     count.num += 1;
@@ -95,21 +96,21 @@ fn getCounts(old: &Matrix, x: uint, y: uint, cval: u8) -> [Count, ..NTEAMS] {
   counts
 }
 
-fn upOne(rules: &Rules, old: &Matrix, current: &mut Matrix, x: uint, y: uint) {
+fn upOne(rules: &Rules, old: &Matrix, current: &mut Matrix, x: usize, y: usize) {
   let (team, cval) = utils::getRich(old.values[y][x]);
   let mut counts = getCounts(old, x, y, cval);
   match team {
-    Blank => upBlank(rules, current, x, y, &mut counts),
+    Team::Blank => upBlank(rules, current, x, y, &mut counts),
     _ => upTeam(current, x, y, teamDiff(rules, team, &counts, cval), &counts, team, cval)
   }
 }
 
-fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [Count, ..NTEAMS]) {
+fn upBlank(rules: &Rules, current: &mut Matrix, x: usize, y: usize, counts: &mut [Count; 5]) {
 
   utils::sortCounts(counts);
 
   let i = match counts[0].team {
-    Blank => 1,
+    Team::Blank => 1,
     _ => 0
   };
   let score = counts[i].score();
@@ -131,10 +132,10 @@ fn upBlank(rules: &Rules, current: &mut Matrix, x: uint, y: uint, counts: &mut [
   }
 }
 
-fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..NTEAMS], team: utils::Team, cval: u8) {
+fn upTeam(current: &mut Matrix, x: usize, y: usize, diff: i8, counts: &[Count; 5], team: utils::Team, cval: u8) {
   let now = cval as i8 + diff;
   current.values[y][x] = if now <= 0 {
-    if counts[utils::predator(team) as int].num > 0 && counts[utils::predator(team) as int].max > 1 {
+    if counts[utils::predator(team) as usize].num > 0 && counts[utils::predator(team) as usize].max > 1 {
       utils::getPoor(utils::predator(team), 1)
     } else {
       0
@@ -146,11 +147,11 @@ fn upTeam(current: &mut Matrix, x: uint, y: uint, diff: i8, counts: &[Count, ..N
   };
 }
 
-fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..NTEAMS], cval: u8) -> i8 {
-  // let empty = counts[Blank as int] as i8;
-  let food = counts[utils::prey(team) as int];
-  let danger = counts[utils::predator(team) as int];
-  let friends = counts[team as int];
+fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count; 5], cval: u8) -> i8 {
+  // let empty = counts[Blank as usize] as i8;
+  let food = counts[utils::prey(team) as usize];
+  let danger = counts[utils::predator(team) as usize];
+  let friends = counts[team as usize];
   if (rules.gang && danger.num > friends.num) || danger.num >= rules.danger {
     -1
   } else if friends.num >= rules.crowd {
@@ -161,7 +162,7 @@ fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..NTEAMS], cval: 
     -1
   } else if friends.greater >= rules.support {
     1
-  // This makes things more round...but I think less interesting
+  // This makes things more round...but I think less isize
   // } else if friends.mmax > cval + 1 {
   //   1
   } else {
@@ -170,8 +171,8 @@ fn teamDiff(rules: &Rules, team: utils::Team, counts: &[Count, ..NTEAMS], cval: 
 }
 
 fn advance(rules: &Rules, old: &Matrix, current: &mut Matrix) {
-  for x in range(0u, old.width) {
-    for y in range(0u, old.height) {
+  for x in 0usize..old.width {
+    for y in 0usize..old.height {
       upOne(rules, old, current, x, y);
     }
   }
@@ -180,40 +181,40 @@ fn advance(rules: &Rules, old: &Matrix, current: &mut Matrix) {
 fn handleKeys(k: sdl::event::Key, config: &mut Config, current: &mut Matrix, old: &mut Matrix) -> bool {
   match k {
     // C: color change (mouse clicking)
-    sdl::event::CKey => {
+    sdl::event::Key::C => {
       config.team = utils::nextTeam(config.team)
     },
     // P: pause/play
-    sdl::event::PKey => {
+    sdl::event::Key::P => {
       config.going = !config.going
     },
     // T: theme change
-    sdl::event::TKey => {
-      config.theme = colors::nextTheme(config.theme);
+    sdl::event::Key::T => {
+      config.theme = colors::nextTheme(&config.theme);
     },
     // D: pattern change
-    sdl::event::DKey => {
-      config.pattern = patterns::nextPattern(config.pattern);
+    sdl::event::Key::D => {
+      config.pattern = patterns::nextPattern(&config.pattern);
       old.fill(0,0,100,100,0);
-      patterns::prefill(config.pattern, current)
+      patterns::prefill(&config.pattern, current)
     },
-    sdl::event::SKey => {
+    sdl::event::Key::S => {
       return true;
     },
     // SPACE: restart
-    sdl::event::SpaceKey => {
+    sdl::event::Key::Space => {
       old.fill(0,0,100,100,0);
-      patterns::prefill(config.pattern, current)
+      patterns::prefill(&config.pattern, current)
     },
     _ => {}
   }
   false
 }
 
-fn handleButtons(buttons: &mut [button::Button], thev: &sdl::event::Event, rules: &mut rules::Rules) -> bool {
-  let stop = buttons.mut_iter().any(|button| {
+fn handleButtons(buttons: &mut Vec<button::Button>, thev: &sdl::event::Event, rules: &mut rules::Rules) -> bool {
+  let stop = buttons.iter_mut().any(|button| {
     if button.event(thev) {
-      rules::ruleIt(rules, button.action, button.value as u8);
+      rules::ruleIt(rules, &button.action, button.value as u8);
       return true;
     }
     false
@@ -221,17 +222,16 @@ fn handleButtons(buttons: &mut [button::Button], thev: &sdl::event::Event, rules
   stop
 }
 
-#[main]
 pub fn main() {
-  sdl::init([sdl::InitVideo]);
+  sdl::init(&[sdl::InitFlag::Video]);
   sdl::wm::set_caption("Rust Simulator", "rust-sdl");
 
   let mut config = Config {
     width: 600,
     height: 600,
-    theme: colors::Dark,
-    pattern: patterns::Test,
-    team: Red,
+    theme: colors::Theme::Dark,
+    pattern: patterns::Pattern::Test,
+    team: Team::Red,
     going: false
   };
 
@@ -253,7 +253,7 @@ pub fn main() {
   let mut current = &mut two;
   let mut third:&mut Matrix;
 
-  let mut buttons: ~[button::Button] = ~[];
+  let mut buttons: Vec<button::Button> = vec![];
   buttons.push(button::Button {
     x: 10,
     y: 10,
@@ -261,8 +261,8 @@ pub fn main() {
     height: 20,
     clicked: false,
     color: RGB(0, 255, 0),
-    value: rules.crowd as int,
-    action: rules::Crowd
+    value: rules.crowd as isize,
+    action: rules::RuleKey::Crowd
   });
 
   /*
@@ -271,21 +271,21 @@ pub fn main() {
     _ => fail!("Couldn't load the font")
   };
   */
-  patterns::prefill(config.pattern, current);
+  patterns::prefill(&config.pattern, current);
 
   'main : loop {
     'event : loop {
       let thev = sdl::event::poll_event();
-      if handleButtons(buttons, &thev, &mut rules) {
+      if handleButtons(&mut buttons, &thev, &mut rules) {
         break;
       }
       match thev {
-        sdl::event::QuitEvent => break 'main,
-        sdl::event::NoEvent => break 'event,
-        sdl::event::KeyEvent(k, _, _, _)
-                  if k == sdl::event::EscapeKey
+        sdl::event::Event::Quit => break 'main,
+        sdl::event::Event::None => break 'event,
+        sdl::event::Event::Key(k, _, _, _)
+                  if k == sdl::event::Key::Escape
                       => break 'main,
-        sdl::event::KeyEvent(k, down, _, _) if down => {
+        sdl::event::Event::Key(k, down, _, _) if down => {
           if handleKeys(k, &mut config, current, old) {
             third = old;
             old = current;
@@ -293,9 +293,9 @@ pub fn main() {
             advance(&rules, old, current);
           }
         },
-        sdl::event::MouseMotionEvent(st, x, y, _, _) => {
+        sdl::event::Event::MouseMotion(st, x, y, _, _) => {
           if st.len() > 0 {
-            current.values[y as uint * current.height / config.height][x as uint * current.width / config.width] = utils::getPoor(config.team, 10);
+            current.values[y as usize * current.height / config.height][x as usize * current.width / config.width] = utils::getPoor(config.team, 10);
           }
         },
         _ => {}
@@ -307,7 +307,7 @@ pub fn main() {
       current = third;
       advance(&rules, old, current);
     }
-    draw(&config, screen, current);
+    draw(&config, &screen, current);
     // for _ in buttons.iter().map(|b| b.draw(screen)) { }
     /*
     let text = match sdl_ttf::render_solid(font, "awesome", RGB(255, 0, 255)) {
