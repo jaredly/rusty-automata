@@ -16,6 +16,7 @@ mod colors;
 mod matrix;
 mod rules;
 
+#[derive(Debug, Clone, Copy)]
 struct Config {
   going: bool,
   width: usize,
