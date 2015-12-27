@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = ["Jared Forsyth <jared@jaredforsyth.com>"]
 
 [dependencies]
-sdl = "0.3.6"
+sdl2 = "0.12"
 
 [[bin]]
 name = "simulate"

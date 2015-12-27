@@ -10,7 +10,7 @@ pub fn sortCounts(counts: &mut [Count; 5]) {
   });
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Count {
   team: Team,
 
@@ -53,7 +53,7 @@ impl Count {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Team {
   Blank = 0,
   Blue = 1,

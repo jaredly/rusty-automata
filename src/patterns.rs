@@ -1,6 +1,7 @@
 
 use matrix::Matrix;
 
+#[derive(Debug, Copy, Clone)]
 pub enum Pattern {
   Test,
   Cross,

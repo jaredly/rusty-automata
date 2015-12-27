@@ -1,8 +1,12 @@
-#![feature(augmented_assignments)]
-extern crate sdl;
-// extern crate sdl_ttf;
+extern crate sdl2;
+
+use sdl2::pixels::Color;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
+use sdl2::render::Renderer;
+use sdl2::rect::Rect;
+
 use matrix::{Matrix, init};
-use sdl::video::{RGB, Surface};
 use utils::{Team, NTEAMS, Count};
 use rules::Rules;
 
@@ -26,47 +30,37 @@ struct Config {
   team: utils::Team
 }
 
-fn draw(config: &Config, screen: &sdl::video::Surface, mx: &Matrix) {
-  let xscale = config.width as i16 / mx.width as i16;
-  let yscale = config.height as i16/ mx.height as i16;
+fn draw(config: &Config, screen: &mut Renderer, mx: &Matrix) {
+  let xscale = config.width as i32 / mx.width as i32;
+  let yscale = config.height as i32/ mx.height as i32;
   let ref theme = config.theme;
   for y in 0usize..mx.height {
     for x in 0usize..mx.width {
-      screen.fill_rect(Some(sdl::Rect {
-        x: (x as i16) * xscale,
-        y: (y as i16) * yscale,
-        w: xscale as u16,
-        h: yscale as u16
-      }), colors::colorize(theme, mx.values[y][x]));
+    screen.set_draw_color(colors::colorize(theme, mx.values[y][x]));
+      screen.fill_rect(Rect::new(
+        (x as i32) * xscale,
+        (y as i32) * yscale,
+        xscale as u32,
+        yscale as u32
+      ).unwrap().unwrap());
     }
   }
 }
-
-fn initScreen(config: Config) -> Surface {
-  match sdl::video::set_video_mode(
-          config.width as isize,
-          config.height as isize,
-          32,
-          &[sdl::video::SurfaceFlag::HWSurface],
-          &[sdl::video::VideoFlag::DoubleBuf]) {
-    Ok(screen) => screen,
-    Err(err) => panic!("failed to set video mode: {}", err)
-  }
-}
-
 
 fn getCounts(old: &Matrix, x: usize, y: usize, cval: u8) -> [Count; 5] {
-  let moves = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
+  let moves: [(isize, isize); 8] = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1), (0, -1)];
   let mut counts:[Count; 5] = [Count::new(); 5];
+  let xi = x as isize;
+  let yi = y as isize;
   for i in 0..8 {
     let (dx, dy) = moves[i];
-    if dx + x < 0 ||
-        dy + y < 0 ||
-        dx + x >= old.width ||
-        dy + y >= old.height {
+    if dx + xi < 0 ||
+        dy + yi < 0 ||
+        dx + xi >= old.width as isize ||
+        dy + yi >= old.height as isize {
       continue;
     }
-    let (oteam, oval) = utils::getRich(old.values[dy+y][dx+x]);
+    let (oteam, oval) = utils::getRich(old.values[(dy+yi) as usize][(dx+xi) as usize]);
     let count = &mut counts[oteam as usize];
     count.team = oteam;
     count.sum += oval;
@@ -179,31 +173,31 @@ fn advance(rules: &Rules, old: &Matrix, current: &mut Matrix) {
   }
 }
 
-fn handleKeys(k: sdl::event::Key, config: &mut Config, current: &mut Matrix, old: &mut Matrix) -> bool {
+fn handleKeys(k: sdl2::keyboard::Keycode, config: &mut Config, current: &mut Matrix, old: &mut Matrix) -> bool {
   match k {
     // C: color change (mouse clicking)
-    sdl::event::Key::C => {
+    Keycode::C => {
       config.team = utils::nextTeam(config.team)
     },
     // P: pause/play
-    sdl::event::Key::P => {
+    Keycode::P => {
       config.going = !config.going
     },
     // T: theme change
-    sdl::event::Key::T => {
+    Keycode::T => {
       config.theme = colors::nextTheme(&config.theme);
     },
     // D: pattern change
-    sdl::event::Key::D => {
+    Keycode::D => {
       config.pattern = patterns::nextPattern(&config.pattern);
       old.fill(0,0,100,100,0);
       patterns::prefill(&config.pattern, current)
     },
-    sdl::event::Key::S => {
+    Keycode::S => {
       return true;
     },
     // SPACE: restart
-    sdl::event::Key::Space => {
+    Keycode::Space => {
       old.fill(0,0,100,100,0);
       patterns::prefill(&config.pattern, current)
     },
@@ -212,6 +206,7 @@ fn handleKeys(k: sdl::event::Key, config: &mut Config, current: &mut Matrix, old
   false
 }
 
+/*
 fn handleButtons(buttons: &mut Vec<button::Button>, thev: &sdl::event::Event, rules: &mut rules::Rules) -> bool {
   let stop = buttons.iter_mut().any(|button| {
     if button.event(thev) {
@@ -222,10 +217,11 @@ fn handleButtons(buttons: &mut Vec<button::Button>, thev: &sdl::event::Event, ru
   });
   stop
 }
+*/
 
 pub fn main() {
-  sdl::init(&[sdl::InitFlag::Video]);
-  sdl::wm::set_caption("Rust Simulator", "rust-sdl");
+  let sdl_context = sdl2::init().unwrap();
+  let video_subsystem = sdl_context.video().unwrap();
 
   let mut config = Config {
     width: 600,
@@ -233,8 +229,15 @@ pub fn main() {
     theme: colors::Theme::Dark,
     pattern: patterns::Pattern::Test,
     team: Team::Red,
-    going: false
+    going: true
   };
+
+  let mut events = sdl_context.event_pump().unwrap();
+  let window = video_subsystem.window("rust-sdl2 demo: Video", config.width as u32, config.height as u32)
+    .position_centered()
+    .build()
+    .unwrap();
+  let mut renderer = window.renderer().build().unwrap();
 
   let mut rules = Rules {
     danger: 1,
@@ -246,13 +249,12 @@ pub fn main() {
     gang: false
   };
 
-  let screen = initScreen(config);
+  // let screen = initScreen(config);
   // sdl_ttf::init();
 
   let (mut one, mut two) = init(200, 200);
   let mut old = &mut one;
   let mut current = &mut two;
-  let mut third:&mut Matrix;
 
   let mut buttons: Vec<button::Button> = vec![];
   buttons.push(button::Button {
@@ -261,7 +263,7 @@ pub fn main() {
     width: 60,
     height: 20,
     clicked: false,
-    color: RGB(0, 255, 0),
+    color: Color::RGB(0, 255, 0),
     value: rules.crowd as isize,
     action: rules::RuleKey::Crowd
   });
@@ -275,52 +277,46 @@ pub fn main() {
   patterns::prefill(&config.pattern, current);
 
   'main : loop {
-    'event : loop {
-      let thev = sdl::event::poll_event();
+    for thev in events.poll_iter() {
+      /*
       if handleButtons(&mut buttons, &thev, &mut rules) {
         break;
       }
+      */
       match thev {
-        sdl::event::Event::Quit => break 'main,
-        sdl::event::Event::None => break 'event,
-        sdl::event::Event::Key(k, _, _, _)
-                  if k == sdl::event::Key::Escape
+        sdl2::event::Event::Quit {..} => break 'main,
+        sdl2::event::Event::KeyDown {keycode, ..}
+                  if keycode == Some(Keycode::Escape)
                       => break 'main,
-        sdl::event::Event::Key(k, down, _, _) if down => {
-          if handleKeys(k, &mut config, current, old) {
-            third = old;
-            old = current;
-            current = third;
+        sdl2::event::Event::KeyDown {keycode, ..} if keycode.is_some() => {
+          if handleKeys(keycode.unwrap(), &mut config, current, old) {
+            std::mem::swap(current, old);
             advance(&rules, old, current);
           }
         },
-        sdl::event::Event::MouseMotion(st, x, y, _, _) => {
-          if st.len() > 0 {
-            current.values[y as usize * current.height / config.height][x as usize * current.width / config.width] = utils::getPoor(config.team, 10);
-          }
+        sdl2::event::Event::MouseMotion {mousestate, x, y, ..} if mousestate.left() => {
+          current.values[y as usize * current.height / config.height][x as usize * current.width / config.width] = utils::getPoor(config.team, 10);
         },
         _ => {}
       }
     }
     if config.going {
-      third = old;
-      old = current;
-      current = third;
+      std::mem::swap(current, old);
       advance(&rules, old, current);
     }
-    draw(&config, &screen, current);
+    draw(&config, &mut renderer, current);
     // for _ in buttons.iter().map(|b| b.draw(screen)) { }
     /*
-    let text = match sdl_ttf::render_solid(font, "awesome", RGB(255, 0, 255)) {
+    let text = match sdl_ttf::render_solid(font, "awesome", Color::RGB(255, 0, 255)) {
       Ok(text) => text,
       _ => fail!("Couldn't draw string")
     };
     screen.blit(text);
     */
 
-    screen.flip();
+    renderer.present();
   }
 
-  sdl::quit();
+  //sdl2::quit();
 }
 

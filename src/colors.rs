@@ -1,7 +1,8 @@
-use sdl::video::{Color, RGB};
+use sdl2::pixels::Color;
 use utils;
 use utils::{Team};
 
+#[derive(Debug, Copy, Clone)]
 pub enum Theme {
   Light,
   Dark,
@@ -26,57 +27,57 @@ pub fn nextTheme(theme: &Theme) -> Theme {
 
 fn light(val: u8) -> Color {
   match utils::getTeam(val) {
-    Team::Blank => RGB(255,255,255),
-    Team::Blue  => RGB(255 - val * 20, 255 - val * 20, 255),
+    Team::Blank => Color::RGB(255,255,255),
+    Team::Blue  => Color::RGB(255 - val * 20, 255 - val * 20, 255),
     Team::Green => {
       let v = val - 10;
-      RGB(255 - v * 20, 255, 255 - v * 20)
+      Color::RGB(255 - v * 20, 255, 255 - v * 20)
     },
     Team::Red   => {
       let v = val - 20;
-      RGB(255, 255 - v * 20, 255 - v * 20)
+      Color::RGB(255, 255 - v * 20, 255 - v * 20)
     },
     Team::Yellow => {
       let v = val - 30;
-      RGB(255, 255, 255 - v * 20)
+      Color::RGB(255, 255, 255 - v * 20)
     }
   }
 }
 
 fn dark(val: u8) -> Color {
   match utils::getTeam(val) {
-    Team::Blank => RGB(0,0,0),
-    Team::Blue  => RGB(0, 0, val*25),
+    Team::Blank => Color::RGB(0,0,0),
+    Team::Blue  => Color::RGB(0, 0, val*25),
     Team::Green => {
       let v = val - 10;
-      RGB(0, v*25, 0)
+      Color::RGB(0, v*25, 0)
     },
     Team::Red   => {
       let v = val - 20;
-      RGB(v*10, 0, v*13)
+      Color::RGB(v*10, 0, v*13)
     },
     Team::Yellow => {
       let v = val - 30;
-      RGB(v*25, v*25, 0)
+      Color::RGB(v*25, v*25, 0)
     }
   }
 }
 
 fn orange(val: u8) -> Color {
   match utils::getTeam(val) {
-    Team::Blank => RGB(0,0,0),
-    Team::Blue  => RGB(val*13, val*8, 0),
+    Team::Blank => Color::RGB(0,0,0),
+    Team::Blue  => Color::RGB(val*13, val*8, 0),
     Team::Green => {
       let v = val - 10;
-      RGB(v*25, v*9, 0)
+      Color::RGB(v*25, v*9, 0)
     },
     Team::Red   => {
       let v = val - 20;
-      RGB(v*13, v*1, 0)
+      Color::RGB(v*13, v*1, 0)
     },
     Team::Yellow => {
       let v = val - 30;
-      RGB(v*25, v*25, 0)
+      Color::RGB(v*25, v*25, 0)
     }
   }
 }

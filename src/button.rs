@@ -1,8 +1,10 @@
 
 use rules::RuleKey;
-use sdl::video::{Color, RGB, Surface};
-use sdl::event::{Event, Mouse};
-use sdl;
+use sdl2::pixels::Color;
+use sdl2::render::Renderer;
+use sdl2::mouse::Mouse;
+use sdl2::event::Event;
+use sdl2::rect::Rect;
 
 pub struct Button {
   pub x: usize,
@@ -39,7 +41,18 @@ impl Button {
   }
 
   pub fn event(&mut self, event: &Event) -> bool {
+  /*
     match event {
+      &Event::MouseButton(which, down, x, y) => match which {
+        Mouse::Left => {
+          if !self.hit(x as usize, y as usize) {
+            return false;
+          }
+          self.click(down, x, y);
+          true
+        },
+        _ => false
+      },
       &Event::MouseButton(which, down, x, y) => match which {
         Mouse::Left => {
           if !self.hit(x as usize, y as usize) {
@@ -52,21 +65,25 @@ impl Button {
       },
       _ => false
     }
+    */
+    false
   }
 
-  pub fn draw(&self, surf: &Surface) {
-    surf.fill_rect(Some(sdl::Rect {
-      x: self.x as i16,
-      y: self.y as i16,
-      w: self.width as u16,
-      h: self.height as u16
-    }), self.color);
-    surf.fill_rect(Some(sdl::Rect {
-      x: (self.x + self.width/2 - 1) as i16,
-      y: self.y as i16,
-      w: 2,
-      h: self.height as u16
-    }), RGB(0,0,0));
+  pub fn draw(&self, surf: &mut Renderer) {
+  surf.set_draw_color(self.color);
+    surf.draw_rect(Rect::new (
+      self.x as i32,
+      self.y as i32,
+      self.width as u32,
+      self.height as u32
+    ).unwrap().unwrap());
+    surf.set_draw_color(Color::RGB(0,0,0));
+    surf.draw_rect(Rect::new(
+      (self.x + self.width/2 - 1) as i32,
+      self.y as i32,
+      2,
+      self.height as u32
+    ).unwrap().unwrap());
   }
 }
 
