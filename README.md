@@ -1,18 +1,16 @@
 # Rusty Automata
 
-This is an experiment in rust & cellular automata. [video](http://www.youtube.com/watch?v=lNFOnomruqk)
+This is an experiment in Rust & cellular automata. [video](http://www.youtube.com/watch?v=lNFOnomruqk)
 
 ![screenshot](screenshots/square-diamond-2.png)
 
 ## Requirements
-- libSDL (`yum install SDL-devel`, `apt-get install libsdl-dev`)
-- the latest unstable version of rust (10-pre), from github's HEAD
+- libSDL2 development headers (`yum install SDL2-devel` or `apt-get install libsdl2-dev`)
+- A recent version of Rust
 
 ## To build & run
 ```
-make rust-sdl
-make
-./simulate
+cargo run
 ```
 
 ## Keyboard shortcuts
@@ -25,9 +23,9 @@ make
 ## Supported Environments
 Let's be real, this is a toy experiment; "support" isn't really part of the picture.
 
-Nevertheless, I've compiled this just fine on Ubuntu 13.10 x86, and Fedora 19 x64.
+Nevertheless, I've compiled this just fine on recent versions of Ubuntu and Fedora.
 
-Let me know if you have questions/comments in the github issues.
+Let me know if you have questions/comments in the GitHub issues.
 
 ## License
 Apache version 2
